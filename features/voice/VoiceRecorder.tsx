@@ -19,6 +19,7 @@ const VoiceRecorder: React.FC<Props> = ({ onTranscript }) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const nativeRecordingRef = useRef<any | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -61,21 +62,9 @@ const VoiceRecorder: React.FC<Props> = ({ onTranscript }) => {
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync({
-        android: {
-          extension: ".m4a",
-          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-        },
-        ios: {
-          extension: ".wav",
-          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_LINEARPCM,
-          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-        },
-      });
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
-      // @ts-expect-error attach for stop
-      (VoiceRecorder as any)._recording = recording;
+      nativeRecordingRef.current = recording;
       setState("recording");
     } catch (e) {
       console.error("[Voice] startRecording error", e);
@@ -103,8 +92,7 @@ const VoiceRecorder: React.FC<Props> = ({ onTranscript }) => {
       }
 
       if (!Audio) throw new Error("Audio module not available");
-      // @ts-expect-error read recording
-      const recording: import("expo-av").Recording | undefined = (VoiceRecorder as any)._recording;
+      const recording = nativeRecordingRef.current;
       if (!recording) throw new Error("No active recording");
       await recording.stopAndUnloadAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
@@ -127,6 +115,7 @@ const VoiceRecorder: React.FC<Props> = ({ onTranscript }) => {
       const stt = await transcribeAudio(formData);
       onTranscript(stt.text);
       setState("idle");
+      nativeRecordingRef.current = null;
     } catch (e) {
       console.error("[Voice] stopRecording error", e);
       setError("Could not process audio. Please try again.");

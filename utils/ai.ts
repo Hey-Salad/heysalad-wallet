@@ -5,7 +5,7 @@ export type LLMMessage =
 
 export type LLMResponse = { completion: string };
 
-export async function askLLM(messages: LLMMessage[]): Promise&lt;LLMResponse&gt; {
+export async function askLLM(messages: LLMMessage[]): Promise<LLMResponse> {
   console.log("[AI] askLLM messages", messages);
   const res = await fetch("https://toolkit.rork.com/text/llm/", {
     method: "POST",
@@ -24,7 +24,7 @@ export async function askLLM(messages: LLMMessage[]): Promise&lt;LLMResponse&gt;
 
 export type STTResponse = { text: string; language: string };
 
-export async function transcribeAudio(formData: FormData): Promise&lt;STTResponse&gt; {
+export async function transcribeAudio(formData: FormData): Promise<STTResponse> {
   console.log("[AI] transcribeAudio start");
   const res = await fetch("https://toolkit.rork.com/stt/transcribe/", {
     method: "POST",

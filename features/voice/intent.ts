@@ -10,7 +10,7 @@ export type ParsedIntent = {
   sustainable?: boolean;
 };
 
-export async function parseVoiceToIntent(text: string): Promise&lt;ParsedIntent | null&gt; {
+export async function parseVoiceToIntent(text: string): Promise<ParsedIntent | null> {
   const sys =
     "You are a parser. Extract structured payment intents for a TRON wallet focused on food. " +
     "Return strict JSON with keys: action ('send'), amountTrx (number), toName (string optional), address (optional), note (optional), category (one of groceries, restaurants, farmers_market, delivery, other, sustainable), sustainable (boolean). " +
