@@ -44,7 +44,7 @@ async function decodeQrFromImageUrl(url: string): Promise<string | null> {
 }
 
 export default function PayScreen() {
-  const { send } = useWallet();
+  const { send, wallet } = useWallet();
   const [intent, setIntent] = useState<PendingIntent | null>(null);
   const [method, setMethod] = useState<PayMethod>("voice");
   const [toAddr, setToAddr] = useState<string>("");
@@ -96,11 +96,21 @@ export default function PayScreen() {
     setProcessing(true);
     setError(null);
     try {
-      const to = intent.address ?? (intent.toName ? `@${intent.toName}` : "unknown");
+      const to = intent.address?.trim();
+      if (!to || !to.startsWith("T")) {
+        setError("A valid recipient TRON address is required");
+        setProcessing(false);
+        return;
+      }
+      if (!wallet.address) {
+        setError("Set your wallet address in Settings first");
+        setProcessing(false);
+        return;
+      }
       const amountSun = Math.round(intent.amountTrx * 1_000_000);
       try {
-        const res = (await sendTrxMutation.mutateAsync({ to, amountSun })) as BroadcastResult;
-        const txid = (res?.txid ?? null);
+        const res = (await sendTrxMutation.mutateAsync({ to, amountSun, from: wallet.address })) as BroadcastResult & { explorerUrl?: string };
+        const txid = res?.txid ?? null;
         if (txid) {
           console.log("[Pay] Broadcast txid", txid);
           setLastTxId(txid);
@@ -108,8 +118,14 @@ export default function PayScreen() {
           console.warn("[Pay] No txid in response", res);
           setLastTxId(null);
         }
+        if (res?.explorerUrl) {
+          console.log("[Pay] Explorer URL", res.explorerUrl);
+        }
       } catch (networkErr) {
-        console.warn("[Pay] Backend sendTrx failed, falling back to local mock", networkErr);
+        console.warn("[Pay] Backend sendTrx failed", networkErr);
+        setError(networkErr instanceof Error ? networkErr.message : "Failed to send on-chain");
+        setProcessing(false);
+        return;
       }
       send(to, intent.amountTrx, intent.note ?? intent.rawText, intent.category, intent.sustainable);
       Alert.alert("Payment sent", "Your foodie payment is on its way. Enjoy! 🥗");
@@ -120,7 +136,7 @@ export default function PayScreen() {
     } finally {
       setProcessing(false);
     }
-  }, [intent, send, sendTrxMutation]);
+  }, [intent, send, sendTrxMutation, wallet.address]);
 
   const canConfirm = useMemo(() => !!intent && intent.amountTrx > 0, [intent]);
 
