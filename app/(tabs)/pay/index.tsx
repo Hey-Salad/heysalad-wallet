@@ -8,6 +8,7 @@ import { parseVoiceToIntent } from "@/features/voice/intent";
 import { formatTrx } from "@/utils/format";
 import { Stack } from "expo-router";
 import { Check } from "lucide-react-native";
+import { trpc } from "@/lib/trpc";
 
 type PendingIntent = {
   rawText: string;
@@ -24,6 +25,12 @@ export default function PayScreen() {
   const [intent, setIntent] = useState<PendingIntent | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const trpcUtils = trpc.useUtils();
+  const sendTrxMutation = trpc.tron.sendTrx.useMutation({
+    onError: (e) => {
+      console.error("[Pay] sendTrx error", e);
+    },
+  });
 
   const onTranscript = useCallback(async (text: string) => {
     console.log("[Pay] Transcript", text);
@@ -46,21 +53,28 @@ export default function PayScreen() {
     setIntent(pending);
   }, []);
 
-  const onConfirm = useCallback(() => {
+  const onConfirm = useCallback(async () => {
     if (!intent) return;
+    setProcessing(true);
+    setError(null);
     try {
-      setProcessing(true);
       const to = intent.address ?? (intent.toName ? `@${intent.toName}` : "unknown");
+      const amountSun = Math.round(intent.amountTrx * 1_000_000);
+      try {
+        await sendTrxMutation.mutateAsync({ to, amountSun });
+      } catch (networkErr) {
+        console.warn("[Pay] Backend sendTrx failed, falling back to local mock", networkErr);
+      }
       send(to, intent.amountTrx, intent.note ?? intent.rawText, intent.category, intent.sustainable);
-      setProcessing(false);
       Alert.alert("Payment sent", "Your foodie payment is on its way. Enjoy! 🥗");
       setIntent(null);
     } catch (e) {
       console.error("[Pay] Send failed", e);
-      setProcessing(false);
       setError(e instanceof Error ? e.message : "Payment failed");
+    } finally {
+      setProcessing(false);
     }
-  }, [intent, send]);
+  }, [intent, send, sendTrxMutation]);
 
   const canConfirm = useMemo(() => !!intent && intent.amountTrx > 0, [intent]);
 

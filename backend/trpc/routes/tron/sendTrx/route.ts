@@ -2,7 +2,6 @@ import { publicProcedure } from "@/backend/trpc/create-context";
 import { z } from "zod";
 
 const schema = z.object({
-  fromPrivateKey: z.string().min(32),
   to: z.string().min(1),
   amountSun: z.number().int().positive(),
   nodeUrl: z.string().url().optional(),
@@ -17,6 +16,12 @@ export default publicProcedure
     };
     if (process.env.EXPO_PUBLIC_TRONGRID_API_KEY) {
       headers["TRON-PRO-API-KEY"] = process.env.EXPO_PUBLIC_TRONGRID_API_KEY;
+    }
+
+    const serverPrivateKey = process.env.TRON_PRIVATE_KEY ?? process.env.PRIVATE_KEY;
+    if (!serverPrivateKey || serverPrivateKey.length < 32) {
+      console.error("[tron.sendTrx] Missing TRON_PRIVATE_KEY on server");
+      throw new Error("Server misconfigured: missing TRON private key");
     }
 
     const triggerRes = await fetch(`${base}/wallet/createtransaction`, {
@@ -38,13 +43,12 @@ export default publicProcedure
 
     const tx = await triggerRes.json();
 
-    // For prototype, we rely on TronGrid's signtransaction endpoint with private key
     const signRes = await fetch(`${base}/wallet/gettransactionsign`, {
       method: "POST",
       headers,
       body: JSON.stringify({
         transaction: tx,
-        privateKey: input.fromPrivateKey,
+        privateKey: serverPrivateKey,
       }),
     });
 
