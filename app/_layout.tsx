@@ -1,13 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WalletProvider } from "@/providers/WalletProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
-
-SplashScreen.preventAutoHideAsync();
+import { AuthProvider } from "@/providers/AuthProvider";
 
 const queryClient = new QueryClient();
 
@@ -22,19 +21,31 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
+    (async () => {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+      } catch (e) {
+        console.log("[Splash] preventAutoHideAsync error", e);
+      }
+    })();
+  }, []);
+
+  const onReady = useCallback(() => {
     SplashScreen.hideAsync();
   }, []);
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <WalletProvider>
-          <GestureHandlerRootView>
-            <ErrorBoundary>
-              <RootLayoutNav />
-            </ErrorBoundary>
-          </GestureHandlerRootView>
-        </WalletProvider>
+        <AuthProvider>
+          <WalletProvider>
+            <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
+              <ErrorBoundary>
+                <RootLayoutNav />
+              </ErrorBoundary>
+            </GestureHandlerRootView>
+          </WalletProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );

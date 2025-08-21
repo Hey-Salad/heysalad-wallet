@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import Colors from "@/constants/colors";
-import { Wallet, Mic, Users, Gift } from "lucide-react-native";
+import { Wallet, DollarSign, Users, Gift } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -23,8 +23,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="pay"
         options={{
-          title: "Pay",
-          tabBarIcon: ({ color }) => <Mic color={color} />,
+          title: "Payments",
+          tabBarIcon: ({ color }) => <DollarSign color={color} />,
         }}
       />
       <Tabs.Screen

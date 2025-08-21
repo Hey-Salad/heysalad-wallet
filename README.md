@@ -1,135 +1,138 @@
-# HeySalad® Wallet (TRON) – Expo + Expo Router + Hono + tRPC
+# HeySalad Wallet (TRON)
 
-A mobile-first, cross‑platform wallet focused on food payments. Built with Expo (Go v53) and React Native Web. Includes voice commands, AI intent parsing, social bill splitting, sustainable purchase rewards, and a lightweight backend powered by Hono + tRPC.
+Mobile-first TRON wallet prototype with food/social payments. Runs in Expo Go v53 and web preview. Backend: Hono + tRPC at /api. Features wallet, Payments, Social Split (IOUs), Rewards, and basic voice.
 
-Brand colors: cherry red #ed4c4c, peach #ffd0cd and #faa09a. Buttons are large and friendly (50px radii).
+## At-a-glance
+- Frontend: Expo Router + React Native (web compatible), TypeScript, React Query (via tRPC), lucide-react-native icons, RN StyleSheet
+- Backend: Hono server with tRPC procedures under /api/trpc
+- Chain: TRON via TronGrid (read), server-assisted signing for prototype sends
 
-## Quick start
+## Architecture
+Client
+- App shell: Expo Router with Tabs: Wallet, Payments, Social, Rewards
+- Providers: React Query, AuthProvider, WalletProvider
+- Data: tRPC client (lib/trpc.ts) pointing to EXPO_PUBLIC_RORK_API_BASE_URL
+- Error Handling: RorkErrorBoundary (components/ErrorBoundary)
+- Media/AI: Voice scaffold (features/voice) using utils/ai tool endpoints
 
-Prereqs: Node 18+, Bun, Expo Go app on your device.
+Server
+- backend/hono.ts mounts Hono app and tRPC router at /api
+- backend/trpc/app-router.ts composes procedures
+- TRON routes: backend/trpc/routes/tron/*
+  - getAccount: fetch account/balances via TronGrid
+  - getTransactions: fetch tx history via TronGrid
+  - sendTrx: build, sign (with TRON_PRIVATE_KEY), broadcast
 
-- Install deps: bun install
-- Start mobile (with tunnel): bun run start
-- Start web: bun run start-web
+Data flow
+1) UI calls trpc().tron.getAccount / getTransactions / sendTrx
+2) Hono+tRPC handler runs server logic
+3) External calls to TronGrid using EXPO_PUBLIC_TRONGRID_URL + EXPO_PUBLIC_TRONGRID_API_KEY
+4) For sends, server signs with TRON_PRIVATE_KEY and returns txid
 
-Scan the QR with Expo Go to run on iOS/Android. Web preview runs via React Native Web.
+Security note
+- TRON_PRIVATE_KEY is server-side only and used for demo signing. Never use real funds/keys.
 
-## Scripts
+## Project structure
+- app/
+  - _layout.tsx: Root layout (providers)
+  - (tabs)/_layout.tsx: Tabs container (no header; each tab has its own stack)
+  - (tabs)/(wallet)/: Wallet tab stack (balances, activity)
+  - (tabs)/pay/: Payments tab stack (text, image, QR flows)
+  - (tabs)/social/: Social Split tab (IOUs/requests)
+  - (tabs)/rewards/: Rewards tab
+  - modal.tsx: Example modal route
+- components/: HSButton, HSTag, TomatoMascot, ErrorBoundary
+- constants/: colors.ts (brand tokens)
+- features/voice/: VoiceRecorder, intent.ts
+- providers/: AuthProvider, WalletProvider
+- utils/: ai.ts, format.ts
+- lib/trpc.ts: tRPC client (React Query powered)
+- backend/
+  - hono.ts: Hono bootstrap
+  - trpc/app-router.ts: root router
+  - trpc/routes/tron/: getAccount, getTransactions, sendTrx
 
-- bun run start – Dev server with tunnel
-- bun run start-web – Web preview with tunnel
-- bun run start-web-dev – Web preview with Expo debug logs
-- bun run lint – Lint
+## UI overview
+Design
+- Clean, modern, large touch targets (≥48dp), rounded corners (50px radii)
+- Brand: cherry #ed4c4c, peach #ffd0cd/#faa09a, plenty of white
+- Icons: lucide-react-native; tab bar uses clear, minimal glyphs
 
-## Project layout
+Tabs & screens
+- Wallet
+  - Balance header, recent transactions
+  - Pull-to-refresh; tap tx to open Tronscan on web/native via Linking
+- Payments (formerly Voice Pay)
+  - Text pay: enter recipient (T-addr) and amount, submit to get txid + Tronscan link
+  - Image/QR pay: paste image or scan QR (web-compatible scanning is limited; fallback to image upload or text input)
+  - Payment history shortcut
+- Social Split (IOU)
+  - Create IOUs (help requests) and track who owes whom
+  - Settle actions can open Payments flow prefilled
+- Rewards
+  - Placeholder for streaks/perks; showcases brand visuals
 
-- app/ – Expo Router routes
-  - _layout.tsx – Root stack
-  - (tabs)/ – Tab navigation
-    - (wallet)/ – Wallet home stack
-    - pay/, social/, rewards/ – Feature areas
-  - modal.tsx – Example modal route
-- components/ – Reusable UI (ErrorBoundary, HSButton, HSTag)
-- constants/ – Theme tokens (colors.ts)
-- features/voice/ – Voice recording + intent parsing
-- providers/ – App providers (WalletProvider)
-- utils/ – Helpers (format, ai)
-- backend/ – Hono + tRPC server
-  - hono.ts – Hono app mounted at /api
-  - trpc/app-router.ts – tRPC router
-  - trpc/routes/... – tRPC procedures
-- lib/trpc.ts – React tRPC client and helpers
+Empty/error/loading states
+- Each list shows skeleton/empty copy
+- Errors surface user-friendly copy with Retry; dev console logs include details
 
-## Backend (Hono + tRPC)
+Accessibility
+- Sufficient color contrast, hitSlop, descriptive accessibilityLabels
 
-The dev server mounts the backend at /api. tRPC endpoints are available under /api/trpc.
+## Environment variables
+Create .env locally or in Rork Environment.
+- EXPO_PUBLIC_RORK_API_BASE_URL: Base host, e.g. https://yourspace.rork.app
+- EXPO_PUBLIC_TRONGRID_URL: TronGrid base
+  - https://nile.trongrid.io (Nile testnet)
+  - https://api.shasta.trongrid.io (Shasta testnet)
+  - https://api.trongrid.io (Mainnet)
+- EXPO_PUBLIC_TRONGRID_API_KEY: TronGrid API key
+- TRON_PRIVATE_KEY: Server-only key to sign prototype txs (test funds only). PRIVATE_KEY alias is also read if present.
 
-- Add a new procedure: create a file under backend/trpc/routes/<area>/<name>/route.ts and export a procedure.
-- Register it in backend/trpc/app-router.ts.
-- Call from React using trpc from lib/trpc.ts:
+See .env.example for a template. Never commit real keys.
 
-Example:
+## Development
+- bun install
+- bun run start       # Expo dev with tunnel
+- bun run start-web   # Web preview
+- lint: bun run lint
 
-```
-import { trpc } from '@/lib/trpc';
+Run the app in Expo Go (v53). Web runs via React Native Web.
 
-export function Example() {
-  const hi = trpc.example.hi.useQuery();
-  if (hi.isLoading) return null;
-  return <Text testID="hi-text">{hi.data?.message}</Text>;
-}
-```
+## Payments flow (txid + Tronscan)
+- After sendTrx succeeds, the UI shows returned txid and a deep-link to Tronscan:
+  - Nile: https://nile.tronscan.org/#/transaction/<txid>
+  - Mainnet: https://tronscan.org/#/transaction/<txid>
+- Linking opens the explorer in the system browser on native and a new tab on web.
 
-Non-React usage (server utilities):
+## State management
+- Server state via React Query (tRPC hooks)
+- Local component state with useState
+- Shared UI/app state via providers in providers/* using @nkzw/create-context-hook
+- Persistence: keep minimal; secrets never stored client-side
 
-```
-import { trpcClient } from '@/lib/trpc';
-const data = await trpcClient.example.hi.query();
-```
+## Error handling & testing
+- components/ErrorBoundary wraps routes; renders friendly fallback
+- All network calls show toasts or inline errors, with Retry
+- testID props included on interactives to enable E2E/automation
+- Verbose console logs in dev builds
 
-## Voice + AI
+## Web compatibility notes
+- Camera/audio APIs are limited on web; QR scanning uses fallbacks (image upload or manual input)
+- Avoids native-only modules; Expo Go v53 compatible
 
-- Recording: features/voice/VoiceRecorder.tsx uses expo-av on mobile and Web APIs on web.
-- STT: utils/ai.ts posts audio to https://toolkit.rork.com/stt/transcribe/.
-- LLM: utils/ai.ts calls https://toolkit.rork.com/text/llm/ to parse intents like “send 5 TRX to Alice”.
-- Intent parsing: features/voice/intent.ts returns a typed ParsedIntent or null when unrecognized.
+## Troubleshooting
+- Splash screen stuck on iOS build (dev)
+  - Ensure no unhandled promise rejections in layout/providers
+  - Verify env vars exist in the runtime (EXPO_PUBLIC_* must be defined before start)
+  - Check tRPC base URL resolves from device (tunnel active)
+- TRPCClientError: Failed to sign transaction
+  - Confirm TRON_PRIVATE_KEY is present in the server env (Rork) and matches the target network
+  - Ensure EXPO_PUBLIC_TRONGRID_URL points to the correct network (e.g., Nile) and API key is valid
 
-Notes
-- On web, MediaRecorder is used; on mobile, expo-av is used. Recording formats are configured per platform.
-- After recording, audio is uploaded via FormData as { uri, name, type } on mobile.
+## Constraints
+- Expo Go v53: no custom native modules; use web-compatible APIs
+- For production-grade wallet (non-custodial, on-device signing), move to custom dev build + wallet SDKs
 
-## Wallet features
-
-- TRON wallet shell with mobile-first UI
-- AI-powered food payments (natural language to actions)
-- Smart categorization for food expenses
-- Social bill splitting for cooking together
-- Token rewards for sustainable purchases
-- Friendly, supportive tone throughout; 50px rounded buttons; brand colors applied
-
-## Design guidelines
-
-- Colors: cherry #ed4c4c, peaches #ffd0cd and #faa09a
-- Clean, modern UI; large touch targets, generous spacing
-- Icons: lucide-react-native
-- Styling: React Native StyleSheet only
-
-## State & data
-
-- React Query for server state
-- Local UI state via useState with explicit types
-- Shared app state via @nkzw/create-context-hook providers
-- AsyncStorage for minimal persistence when necessary
-
-## Routing
-
-- Expo Router with tab-based navigation inside app/(tabs)
-- Each tab can host its own stack; headers belong to stacks, not the Tabs container
-- For full-screen routes outside tabs, create top-level files under app/
-
-## Web compatibility
-
-- Avoid native-only Expo APIs on web; use Platform checks where needed
-- Limited/partial web support: see comments in features using camera, audio, notifications
-- Prefer React Native Animated for simple animations; avoid reanimated-only web patterns
-
-## Testing readiness
-
-- testID props exist on interactive components
-- Error boundaries: components/ErrorBoundary.tsx wraps critical trees
-- Console logs are verbose in dev for debugging
-
-## Development tips
-
-- TypeScript strict: always annotate useState and verify types exist before use
-- Don’t add native modules not included in Expo Go v53
-- If bundling fails, clear cache and restart: stop server, then run bun run start again
-
-## Environment & limits
-
-- Expo Go v53 (no custom native packages beyond Expo SDK)
-- No EAS/Git/Simulators from this environment; run on device via QR or in web preview
-
-## License & attribution
-
-HeySalad® Wallet is an internal demo app scaffold for food payments on TRON. Brand assets and name are property of their respective owners.
+## License
+Internal demo scaffold. Brand assets belong to their owners.

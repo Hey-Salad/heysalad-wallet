@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import TomatoMascot from "@/components/TomatoMascot";
 import Colors from "@/constants/colors";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
@@ -9,7 +10,7 @@ import HSTag from "@/components/HSTag";
 import { ArrowUpRight, ArrowDownLeft } from "lucide-react-native";
 
 export default function WalletHome() {
-  const { wallet, receiveMock } = useWallet();
+  const { wallet } = useWallet();
   const router = useRouter();
 
   const balanceCard = useMemo(() => {
@@ -24,7 +25,10 @@ export default function WalletHome() {
 
   const header = (
     <View style={styles.header} testID="wallet-actions">
-      {balanceCard}
+      <View style={styles.mascotRow}>
+        <TomatoMascot size={84} mood="standard" animated={false} />
+        {balanceCard}
+      </View>
       <View style={styles.row}>
         <HSButton
           title="Voice pay"
@@ -47,16 +51,11 @@ export default function WalletHome() {
           <Text style={styles.address}>{shortAddr(wallet.address)}</Text>
         </View>
         <Image
-          source={{ uri: "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=heysalad" }}
+          source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(wallet.address || "")}` }}
           style={{ width: 60, height: 60, borderRadius: 8 }}
         />
       </View>
-      <HSButton
-        title="Add mock funds +25 TRX"
-        variant="ghost"
-        onPress={() => receiveMock("friend", 25, "Test funds", "other")}
-        testID="mock-funds-btn"
-      />
+
       <Text style={styles.sectionTitle}>Recent activity</Text>
     </View>
   );
@@ -72,7 +71,7 @@ export default function WalletHome() {
           <View style={styles.txCard} testID={`tx-${item.id}`}>
             <View style={{ flex: 1 }}>
               <Text style={styles.txTitle}>To {shortAddr(item.to)}</Text>
-              <Text style={styles.txNote}>{item.note ?? "Food payment"} • {new Date(item.timestamp).toLocaleString()}</Text>
+              <Text style={styles.txNote}>{(item.note ?? "").trim().length ? item.note : "Payment"} • {new Date(item.timestamp).toLocaleString()}</Text>
               <View style={styles.tags}>
                 <HSTag
                   label={item.category}
@@ -96,8 +95,9 @@ export default function WalletHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.brand.surface },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   header: { padding: 16, gap: 12 },
+  mascotRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   balanceCard: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
