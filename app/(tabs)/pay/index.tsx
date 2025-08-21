@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView, Image } from "react-native";
 import Colors from "@/constants/colors";
 import VoiceRecorder from "@/features/voice/VoiceRecorder";
 import HSButton from "@/components/HSButton";
@@ -75,6 +75,9 @@ export default function PayScreen() {
       />
 
       <View style={styles.card}>
+        <View style={{ alignItems: "center", marginBottom: 12 }}>
+          <Image source={require("@/assets/images/HSK-SPEEDY.png")} style={{ width: 96, height: 96 }} resizeMode="contain" />
+        </View>
         <VoiceRecorder onTranscript={onTranscript} />
       </View>
 

@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import TomatoMascot from "@/components/TomatoMascot";
 import Colors from "@/constants/colors";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
@@ -24,7 +25,10 @@ export default function WalletHome() {
 
   const header = (
     <View style={styles.header} testID="wallet-actions">
-      {balanceCard}
+      <View style={styles.mascotRow}>
+        <TomatoMascot size={84} mood="cycle" />
+        {balanceCard}
+      </View>
       <View style={styles.row}>
         <HSButton
           title="Voice pay"
@@ -98,6 +102,7 @@ export default function WalletHome() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.brand.surface },
   header: { padding: 16, gap: 12 },
+  mascotRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   balanceCard: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
