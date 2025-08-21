@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.brand.peachLight,
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
     borderBottomColor: Colors.brand.border,
   },

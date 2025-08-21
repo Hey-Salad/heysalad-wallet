@@ -26,7 +26,7 @@ export default function WalletHome() {
   const header = (
     <View style={styles.header} testID="wallet-actions">
       <View style={styles.mascotRow}>
-        <TomatoMascot size={84} mood="cycle" />
+        <TomatoMascot size={84} mood="standard" animated={false} />
         {balanceCard}
       </View>
       <View style={styles.row}>
@@ -100,7 +100,7 @@ export default function WalletHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.brand.surface },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   header: { padding: 16, gap: 12 },
   mascotRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   balanceCard: {
