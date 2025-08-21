@@ -18,6 +18,8 @@
     "@trpc/client": "^11.4.4",
     "@trpc/react-query": "^11.4.4",
     "@trpc/server": "^11.4.4",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
     "expo": "^53.0.4",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.4",
