@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView, Image } from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform } from "react-native";
 import Colors from "@/constants/colors";
 import VoiceRecorder from "@/features/voice/VoiceRecorder";
 import HSButton from "@/components/HSButton";
@@ -7,7 +7,7 @@ import { useWallet } from "@/providers/WalletProvider";
 import { parseVoiceToIntent } from "@/features/voice/intent";
 import { formatTrx } from "@/utils/format";
 import { Stack } from "expo-router";
-import { Check } from "lucide-react-native";
+import { Check, ExternalLink } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 
 type PendingIntent = {
@@ -20,11 +20,20 @@ type PendingIntent = {
   sustainable: boolean;
 };
 
+type BroadcastResult = {
+  result?: boolean;
+  txid?: string;
+  code?: string;
+  message?: string;
+  Error?: string;
+};
+
 export default function PayScreen() {
   const { send } = useWallet();
   const [intent, setIntent] = useState<PendingIntent | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastTxId, setLastTxId] = useState<string | null>(null);
   const trpcUtils = trpc.useUtils();
   const sendTrxMutation = trpc.tron.sendTrx.useMutation({
     onError: (e) => {
@@ -61,7 +70,15 @@ export default function PayScreen() {
       const to = intent.address ?? (intent.toName ? `@${intent.toName}` : "unknown");
       const amountSun = Math.round(intent.amountTrx * 1_000_000);
       try {
-        await sendTrxMutation.mutateAsync({ to, amountSun });
+        const res = (await sendTrxMutation.mutateAsync({ to, amountSun })) as BroadcastResult;
+        const txid = (res?.txid ?? null);
+        if (txid) {
+          console.log("[Pay] Broadcast txid", txid);
+          setLastTxId(txid);
+        } else {
+          console.warn("[Pay] No txid in response", res);
+          setLastTxId(null);
+        }
       } catch (networkErr) {
         console.warn("[Pay] Backend sendTrx failed, falling back to local mock", networkErr);
       }
@@ -77,6 +94,29 @@ export default function PayScreen() {
   }, [intent, send, sendTrxMutation]);
 
   const canConfirm = useMemo(() => !!intent && intent.amountTrx > 0, [intent]);
+
+  const explorerBase = useMemo(() => {
+    const env = process.env.EXPO_PUBLIC_TRONGRID_URL ?? "https://nile.trongrid.io";
+    return env.includes("nile") || env.includes("shasta")
+      ? "https://nile.tronscan.org/#/transaction/"
+      : "https://tronscan.org/#/transaction/";
+  }, []);
+
+  const openInExplorer = useCallback(async () => {
+    if (!lastTxId) return;
+    const url = `${explorerBase}${lastTxId}`;
+    console.log("[Pay] Open explorer", url);
+    try {
+      if (Platform.OS === "web") {
+        window.open(url, "_blank");
+        return;
+      }
+      const can = await Linking.canOpenURL(url);
+      if (can) await Linking.openURL(url);
+    } catch (e) {
+      console.error("[Pay] open explorer failed", e);
+    }
+  }, [lastTxId, explorerBase]);
 
   return (
     <ScrollView contentContainerStyle={styles.container} testID="pay-screen">
@@ -133,6 +173,23 @@ export default function PayScreen() {
         </View>
       ) : null}
 
+      {lastTxId ? (
+        <View style={styles.hashCard} testID="txid-card">
+          <Text style={styles.hashTitle}>Transaction broadcasted</Text>
+          <Text style={styles.hashValue} numberOfLines={1} ellipsizeMode="middle">
+            {lastTxId}
+          </Text>
+          <HSButton
+            title="View on Tronscan"
+            onPress={openInExplorer}
+            variant="secondary"
+            leftIcon={<ExternalLink color={Colors.brand.red} size={16} />}
+            testID="view-tronscan"
+            style={{ marginTop: 8 }}
+          />
+        </View>
+      ) : null}
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>
   );
@@ -159,5 +216,14 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: "row", justifyContent: "space-between" },
   label: { color: Colors.brand.inkMuted },
   value: { fontWeight: "800" as const, color: Colors.brand.ink },
+  hashCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.brand.border,
+    padding: 16,
+  },
+  hashTitle: { fontSize: 14, fontWeight: "800" as const, color: Colors.brand.ink },
+  hashValue: { marginTop: 4, color: Colors.brand.inkMuted },
   error: { color: Colors.brand.red, fontWeight: "700" as const },
 });
