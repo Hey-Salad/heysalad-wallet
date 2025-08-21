@@ -174,11 +174,35 @@ export default function PayScreen() {
       />
 
       <View style={[styles.card, { paddingBottom: 8 }]}>
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-          <HSButton title="Voice" variant={method === "voice" ? "primary" : "secondary"} leftIcon={<Mic color={method === "voice" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("voice")} />
-          <HSButton title="Text" variant={method === "text" ? "primary" : "secondary"} leftIcon={<Keyboard color={method === "text" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("text")} />
-          <HSButton title="QR Scan" variant={method === "qr" ? "primary" : "secondary"} leftIcon={<QrCode color={method === "qr" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("qr")} />
-          <HSButton title="QR Image" variant={method === "qrImage" ? "primary" : "secondary"} leftIcon={<QrCode color={method === "qrImage" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("qrImage")} />
+        <View style={styles.methodRow}>
+          <HSButton
+            title="Voice"
+            variant={method === "voice" ? "primary" : "secondary"}
+            leftIcon={<Mic color={method === "voice" ? "#fff" : Colors.brand.red} size={16} />}
+            onPress={() => setMethod("voice")}
+            style={styles.methodBtn}
+          />
+          <HSButton
+            title="Text"
+            variant={method === "text" ? "primary" : "secondary"}
+            leftIcon={<Keyboard color={method === "text" ? "#fff" : Colors.brand.red} size={16} />}
+            onPress={() => setMethod("text")}
+            style={styles.methodBtn}
+          />
+          <HSButton
+            title="QR Scan"
+            variant={method === "qr" ? "primary" : "secondary"}
+            leftIcon={<QrCode color={method === "qr" ? "#fff" : Colors.brand.red} size={16} />}
+            onPress={() => setMethod("qr")}
+            style={styles.methodBtn}
+          />
+          <HSButton
+            title="QR Image"
+            variant={method === "qrImage" ? "primary" : "secondary"}
+            leftIcon={<QrCode color={method === "qrImage" ? "#fff" : Colors.brand.red} size={16} />}
+            onPress={() => setMethod("qrImage")}
+            style={styles.methodBtn}
+          />
         </View>
 
         {method === "voice" ? (
@@ -232,7 +256,6 @@ export default function PayScreen() {
         {method === "qr" ? (
           <View style={{ gap: 8 }}>
             <Text style={styles.label}>Scan a QR code with TRON address</Text>
-            {/* We will navigate to a modal scanner to keep this file light */}
             <HSButton title="Open scanner" variant="secondary" onPress={() => Alert.alert("Scanner", "Use the built-in scanner in the next version. For now, use QR Image or Voice/Text.")} />
           </View>
         ) : null}
@@ -299,13 +322,17 @@ export default function PayScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#ffffff", gap: 12 },
+  container: { padding: 16, backgroundColor: Colors.brand.surface, gap: 12 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.brand.border,
     padding: 16,
+    shadowColor: "#00000022",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   reviewCard: {
     backgroundColor: "#fff",
@@ -329,5 +356,7 @@ const styles = StyleSheet.create({
   hashTitle: { fontSize: 14, fontWeight: "800" as const, color: Colors.brand.ink },
   hashValue: { marginTop: 4, color: Colors.brand.inkMuted },
   error: { color: Colors.brand.red, fontWeight: "700" as const },
-  input: { borderWidth: 1, borderColor: Colors.brand.border, borderRadius: 10, padding: 12 }
+  input: { borderWidth: 1, borderColor: Colors.brand.border, borderRadius: 10, padding: 12 },
+  methodRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  methodBtn: { flex: 1 },
 });
