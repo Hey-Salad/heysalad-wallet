@@ -19,11 +19,22 @@ export type Transaction = {
   participants?: { name: string; share: number }[];
 };
 
+export type IOURequest = {
+  id: string;
+  from: string;
+  to: string;
+  amountTrx: number;
+  note?: string;
+  createdAt: number;
+  settled: boolean;
+};
+
 export type WalletState = {
   address: string; // base58 address
   tronBalance: number;
   tokenBalance: number;
   transactions: Transaction[];
+  iouRequests: IOURequest[];
 };
 
 const STORAGE_KEY = "heysalad_wallet_v1";
@@ -33,6 +44,7 @@ const defaultWallet: WalletState = {
   tronBalance: 0,
   tokenBalance: 0,
   transactions: [],
+  iouRequests: [],
 };
 
 async function loadWallet(): Promise<WalletState> {
@@ -153,11 +165,38 @@ export const [WalletProvider, useWallet] = createContextHook(() => {
     return null as unknown as Transaction;
   }, []);
 
+  const addIOU = useCallback((to: string, amountTrx: number, note?: string) => {
+    if (amountTrx <= 0) throw new Error("Amount must be greater than zero");
+    const iou: IOURequest = {
+      id: `${Date.now()}`,
+      from: wallet.address || "me",
+      to,
+      amountTrx,
+      note,
+      createdAt: Date.now(),
+      settled: false,
+    };
+    setWallet((s) => ({ ...s, iouRequests: [iou, ...s.iouRequests] }));
+    persistMutation.mutate({ ...wallet, iouRequests: [iou, ...wallet.iouRequests] });
+    return iou;
+  }, [wallet, persistMutation]);
+
+  const settleIOU = useCallback((id: string) => {
+    setWallet((s) => {
+      const updated = s.iouRequests.map((i) => (i.id === id ? { ...i, settled: true } : i));
+      const next = { ...s, iouRequests: updated };
+      persistMutation.mutate(next);
+      return next;
+    });
+  }, [persistMutation]);
+
   const value = useMemo(() => {
     return {
       wallet,
       isLoading: walletQuery.isLoading || persistMutation.isPending || tronGetAccount.isLoading,
       send,
+      addIOU,
+      settleIOU,
       receiveMock,
       setAddress: (addr: string) => {
         const updated: WalletState = { ...wallet, address: addr };
@@ -165,7 +204,7 @@ export const [WalletProvider, useWallet] = createContextHook(() => {
         persistMutation.mutate(updated);
       },
     };
-  }, [wallet, walletQuery.isLoading, persistMutation.isPending, tronGetAccount.isLoading, send, receiveMock, persistMutation]);
+  }, [wallet, walletQuery.isLoading, persistMutation.isPending, tronGetAccount.isLoading, send, addIOU, settleIOU, receiveMock, persistMutation]);
 
   return value;
 });

@@ -167,7 +167,7 @@ export default function PayScreen() {
     <ScrollView contentContainerStyle={styles.container} testID="pay-screen">
       <Stack.Screen
         options={{
-          title: "Pay",
+          title: "Payments",
           headerStyle: { backgroundColor: "#ffffff" },
           headerTintColor: Colors.brand.red,
         }}

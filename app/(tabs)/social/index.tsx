@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TextInput, FlatList } from "react-native";
+import { View, Text, StyleSheet, TextInput, FlatList, ScrollView } from "react-native";
 import Colors from "@/constants/colors";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
@@ -9,13 +9,17 @@ import { Stack } from "expo-router";
 type Person = { id: string; name: string; share: number };
 
 export default function SocialSplitScreen() {
-  const { send } = useWallet();
+  const { send, wallet, addIOU, settleIOU } = useWallet();
   const [total, setTotal] = useState<string>("");
   const [people, setPeople] = useState<Person[]>([
     { id: "1", name: "You", share: 1 },
     { id: "2", name: "Alex", share: 1 },
   ]);
   const [note, setNote] = useState<string>("Cooking night");
+
+  const [iouTo, setIouTo] = useState<string>("Friend");
+  const [iouAmount, setIouAmount] = useState<string>("");
+  const [iouNote, setIouNote] = useState<string>("Help with groceries");
 
   const perHead = useMemo(() => {
     const t = parseFloat(total) || 0;
@@ -42,7 +46,7 @@ export default function SocialSplitScreen() {
   };
 
   return (
-    <View style={styles.container} testID="social-screen">
+    <ScrollView contentContainerStyle={styles.container} testID="social-screen">
       <Stack.Screen
         options={{
           title: "Split & Cook",
@@ -76,7 +80,7 @@ export default function SocialSplitScreen() {
               <TextInput
                 value={String(item.share)}
                 onChangeText={(t) =>
-                  setPeople((arr) => arr.map((p, ix) => (ix === index ? { ...p, share: Number(t) || 0 } : p)))
+                setPeople((arr) => arr.map((p, ix) => (ix === index ? { ...p, share: Number(t) || 0 } : p)))
                 }
                 keyboardType="number-pad"
                 style={[styles.personInput, { width: 70, textAlign: "center" }]}
@@ -98,12 +102,73 @@ export default function SocialSplitScreen() {
 
         <HSButton title="Send & log split" onPress={onSend} variant="primary" testID="send-split-btn" />
       </View>
-    </View>
+
+      <View style={styles.card}>
+        <Text style={styles.title}>IOU requests</Text>
+        <TextInput
+          placeholder="To (name/handle)"
+          value={iouTo}
+          onChangeText={setIouTo}
+          style={styles.input}
+          testID="iou-to"
+        />
+        <TextInput
+          placeholder="Amount in TRX"
+          value={iouAmount}
+          onChangeText={setIouAmount}
+          keyboardType="decimal-pad"
+          style={styles.input}
+          testID="iou-amount"
+        />
+        <TextInput
+          placeholder="Note"
+          value={iouNote}
+          onChangeText={setIouNote}
+          style={styles.input}
+          testID="iou-note"
+        />
+        <HSButton
+          title="Create IOU"
+          variant="secondary"
+          onPress={() => {
+            const amt = parseFloat(iouAmount);
+            if (!isFinite(amt) || amt <= 0) return;
+            try {
+              addIOU(iouTo, amt, iouNote);
+              setIouAmount("");
+            } catch (e) {
+              console.log("[IOU] create error", e);
+            }
+          }}
+          testID="create-iou-btn"
+        />
+
+        {wallet.iouRequests.length > 0 ? (
+          <View style={{ marginTop: 8, gap: 8 }}>
+            {wallet.iouRequests.map((r) => (
+              <View key={r.id} style={styles.iouRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.iouTitle}>{r.to} owes {formatTrx(r.amountTrx)}</Text>
+                  {r.note ? <Text style={styles.iouNote}>{r.note}</Text> : null}
+                </View>
+                {r.settled ? (
+                  <Text style={styles.iouSettled}>Settled</Text>
+                ) : (
+                  <HSButton title="Settle" variant="ghost" onPress={() => settleIOU(r.id)} testID={`settle-${r.id}`} />
+                )}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={{ color: Colors.brand.inkMuted }}>No IOUs yet</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.brand.surface, padding: 16 },
+  container: { padding: 16, backgroundColor: Colors.brand.surface, gap: 12 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -131,4 +196,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   shareValue: { fontWeight: "700" as const, color: Colors.brand.red },
+  iouRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.brand.border,
+  },
+  iouTitle: { fontWeight: "800" as const, color: Colors.brand.ink },
+  iouNote: { color: Colors.brand.inkMuted },
+  iouSettled: { color: Colors.brand.green ?? "#2e7d32", fontWeight: "700" as const },
 });
