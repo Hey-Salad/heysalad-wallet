@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform } from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform, TextInput } from "react-native";
 import Colors from "@/constants/colors";
 import VoiceRecorder from "@/features/voice/VoiceRecorder";
 import HSButton from "@/components/HSButton";
@@ -7,7 +7,7 @@ import { useWallet } from "@/providers/WalletProvider";
 import { parseVoiceToIntent } from "@/features/voice/intent";
 import { formatTrx } from "@/utils/format";
 import { Stack } from "expo-router";
-import { Check, ExternalLink } from "lucide-react-native";
+import { Check, ExternalLink, QrCode, Mic, Keyboard } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 
 type PendingIntent = {
@@ -27,10 +27,29 @@ type BroadcastResult = {
   message?: string;
   Error?: string;
 };
+type PayMethod = "voice" | "text" | "qr" | "qrImage";
+
+async function decodeQrFromImageUrl(url: string): Promise<string | null> {
+  try {
+    const api = `https://api.qrserver.com/v1/read-qr-code/?fileurl=${encodeURIComponent(url)}`;
+    const res = await fetch(api);
+    if (!res.ok) return null;
+    const data = (await res.json()) as any[];
+    const txt: string | undefined = data?.[0]?.symbol?.[0]?.data;
+    return txt ?? null;
+  } catch (e) {
+    console.log("[QR] decode error", e);
+    return null;
+  }
+}
 
 export default function PayScreen() {
   const { send } = useWallet();
   const [intent, setIntent] = useState<PendingIntent | null>(null);
+  const [method, setMethod] = useState<PayMethod>("voice");
+  const [toAddr, setToAddr] = useState<string>("");
+  const [amountStr, setAmountStr] = useState<string>("");
+  const [imgUrl, setImgUrl] = useState<string>("");
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTxId, setLastTxId] = useState<string | null>(null);
@@ -61,6 +80,16 @@ export default function PayScreen() {
     };
     setIntent(pending);
   }, []);
+
+  const confirmFromText = useCallback(() => {
+    const amt = parseFloat(amountStr);
+    if (!toAddr || !isFinite(amt) || amt <= 0) {
+      setError("Enter a valid TRON address and amount");
+      return;
+    }
+    const p: PendingIntent = { rawText: `Send ${amt} TRX to ${toAddr}`, amountTrx: amt, address: toAddr, category: "other", sustainable: false };
+    setIntent(p);
+  }, [toAddr, amountStr]);
 
   const onConfirm = useCallback(async () => {
     if (!intent) return;
@@ -122,17 +151,75 @@ export default function PayScreen() {
     <ScrollView contentContainerStyle={styles.container} testID="pay-screen">
       <Stack.Screen
         options={{
-          title: "Voice Pay",
-          headerStyle: { backgroundColor: Colors.brand.peachLight },
+          title: "Pay",
+          headerStyle: { backgroundColor: "#ffffff" },
           headerTintColor: Colors.brand.red,
         }}
       />
 
-      <View style={styles.card}>
-        <View style={{ alignItems: "center", marginBottom: 12 }}>
-          <Image source={require("@/assets/images/HSK-SPEEDY.png")} style={{ width: 96, height: 96 }} resizeMode="contain" />
+      <View style={[styles.card, { paddingBottom: 8 }]}>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+          <HSButton title="Voice" variant={method === "voice" ? "primary" : "secondary"} leftIcon={<Mic color={method === "voice" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("voice")} />
+          <HSButton title="Text" variant={method === "text" ? "primary" : "secondary"} leftIcon={<Keyboard color={method === "text" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("text")} />
+          <HSButton title="QR Scan" variant={method === "qr" ? "primary" : "secondary"} leftIcon={<QrCode color={method === "qr" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("qr")} />
+          <HSButton title="QR Image" variant={method === "qrImage" ? "primary" : "secondary"} leftIcon={<QrCode color={method === "qrImage" ? "#fff" : Colors.brand.red} size={16} />} onPress={() => setMethod("qrImage")} />
         </View>
-        <VoiceRecorder onTranscript={onTranscript} />
+
+        {method === "voice" ? (
+          <>
+            <View style={{ alignItems: "center", marginBottom: 12 }}>
+              <Image source={require("@/assets/images/HSK-SPEEDY.png")} style={{ width: 96, height: 96 }} resizeMode="contain" />
+            </View>
+            <VoiceRecorder onTranscript={onTranscript} />
+          </>
+        ) : null}
+
+        {method === "text" ? (
+          <View style={{ gap: 8 }}>
+            <Text style={styles.label}>TRON address</Text>
+            <TextInput value={toAddr} onChangeText={setToAddr} placeholder="T..." autoCapitalize="none" style={styles.input} testID="to-address" />
+            <Text style={styles.label}>Amount (TRX)</Text>
+            <TextInput value={amountStr} onChangeText={setAmountStr} placeholder="0.0" keyboardType="decimal-pad" style={styles.input} testID="amount-input" />
+            <HSButton title="Review" onPress={confirmFromText} variant="primary" />
+          </View>
+        ) : null}
+
+        {method === "qrImage" ? (
+          <View style={{ gap: 8 }}>
+            <Text style={styles.label}>Paste QR image URL</Text>
+            <TextInput value={imgUrl} onChangeText={setImgUrl} placeholder="https://.../qr.png" autoCapitalize="none" style={styles.input} testID="qr-image-url" />
+            <HSButton
+              title="Decode"
+              onPress={async () => {
+                setProcessing(true);
+                const decoded = await decodeQrFromImageUrl(imgUrl.trim());
+                setProcessing(false);
+                if (!decoded) {
+                  setError("Could not decode QR image");
+                  return;
+                }
+                setError(null);
+                const match = decoded.match(/^(T[\w]+)(?:\?amount=(\d+(?:\.\d+)?))?/);
+                if (match) {
+                  setToAddr(match[1]);
+                  if (match[2]) setAmountStr(match[2]);
+                  setMethod("text");
+                } else {
+                  setError("QR did not contain a TRON address");
+                }
+              }}
+              variant="secondary"
+            />
+          </View>
+        ) : null}
+
+        {method === "qr" ? (
+          <View style={{ gap: 8 }}>
+            <Text style={styles.label}>Scan a QR code with TRON address</Text>
+            {/* We will navigate to a modal scanner to keep this file light */}
+            <HSButton title="Open scanner" variant="secondary" onPress={() => Alert.alert("Scanner", "Use the built-in scanner in the next version. For now, use QR Image or Voice/Text.")} />
+          </View>
+        ) : null}
       </View>
 
       {intent ? (
@@ -196,7 +283,7 @@ export default function PayScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: Colors.brand.surface, gap: 12 },
+  container: { padding: 16, backgroundColor: "#ffffff", gap: 12 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -226,4 +313,5 @@ const styles = StyleSheet.create({
   hashTitle: { fontSize: 14, fontWeight: "800" as const, color: Colors.brand.ink },
   hashValue: { marginTop: 4, color: Colors.brand.inkMuted },
   error: { color: Colors.brand.red, fontWeight: "700" as const },
+  input: { borderWidth: 1, borderColor: Colors.brand.border, borderRadius: 10, padding: 12 }
 });

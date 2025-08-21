@@ -1,14 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WalletProvider } from "@/providers/WalletProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { AuthProvider } from "@/providers/AuthProvider";
-
-SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
@@ -23,6 +21,16 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
+    (async () => {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+      } catch (e) {
+        console.log("[Splash] preventAutoHideAsync error", e);
+      }
+    })();
+  }, []);
+
+  const onReady = useCallback(() => {
     SplashScreen.hideAsync();
   }, []);
 
@@ -31,7 +39,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <WalletProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
               <ErrorBoundary>
                 <RootLayoutNav />
               </ErrorBoundary>

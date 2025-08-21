@@ -2,6 +2,7 @@ import { createTRPCRouter } from "./create-context";
 import hiRoute from "./routes/example/hi/route";
 import tronGetAccount from "./routes/tron/getAccount/route";
 import tronSendTrx from "./routes/tron/sendTrx/route";
+import tronGetTransactions from "./routes/tron/getTransactions/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -9,6 +10,7 @@ export const appRouter = createTRPCRouter({
   }),
   tron: createTRPCRouter({
     getAccount: tronGetAccount,
+    getTransactions: tronGetTransactions,
     sendTrx: tronSendTrx,
   }),
 });
