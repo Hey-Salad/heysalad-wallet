@@ -59,8 +59,17 @@ async function loadWallet(): Promise<WalletState> {
     return defaultWallet;
   }
   try {
-    const parsed = JSON.parse(raw) as WalletState;
-    return parsed;
+    const parsed = JSON.parse(raw) as Partial<WalletState>;
+    const merged: WalletState = {
+      ...defaultWallet,
+      ...parsed,
+      address: parsed.address ?? defaultWallet.address,
+      tronBalance: parsed.tronBalance ?? defaultWallet.tronBalance,
+      tokenBalance: parsed.tokenBalance ?? defaultWallet.tokenBalance,
+      transactions: parsed.transactions ?? defaultWallet.transactions,
+      iouRequests: parsed.iouRequests ?? defaultWallet.iouRequests,
+    };
+    return merged;
   } catch (e) {
     console.error("[Wallet] Failed to parse wallet, resetting", e);
     return defaultWallet;
@@ -176,15 +185,16 @@ export const [WalletProvider, useWallet] = createContextHook(() => {
       createdAt: Date.now(),
       settled: false,
     };
-    setWallet((s) => ({ ...s, iouRequests: [iou, ...s.iouRequests] }));
-    persistMutation.mutate({ ...wallet, iouRequests: [iou, ...wallet.iouRequests] });
+    setWallet((s) => ({ ...s, iouRequests: [iou, ...(s.iouRequests ?? [])] }));
+    persistMutation.mutate({ ...wallet, iouRequests: [iou, ...(wallet.iouRequests ?? [])] });
     return iou;
   }, [wallet, persistMutation]);
 
   const settleIOU = useCallback((id: string) => {
     setWallet((s) => {
-      const updated = s.iouRequests.map((i) => (i.id === id ? { ...i, settled: true } : i));
-      const next = { ...s, iouRequests: updated };
+      const current = s.iouRequests ?? [];
+      const updated = current.map((i) => (i.id === id ? { ...i, settled: true } : i));
+      const next = { ...s, iouRequests: updated } as WalletState;
       persistMutation.mutate(next);
       return next;
     });

@@ -143,9 +143,9 @@ export default function SocialSplitScreen() {
           testID="create-iou-btn"
         />
 
-        {wallet.iouRequests.length > 0 ? (
+        {(wallet.iouRequests?.length ?? 0) > 0 ? (
           <View style={{ marginTop: 8, gap: 8 }}>
-            {wallet.iouRequests.map((r) => (
+            {wallet.iouRequests?.map((r) => (
               <View key={r.id} style={styles.iouRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.iouTitle}>{r.to} owes {formatTrx(r.amountTrx)}</Text>
