@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.heysalad-wallet",
+      "bundleIdentifier": "app.saladhr.heysalad-wallet",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -32,7 +32,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.heysalad-wallet",
+      "package": "app.saladhr.heysalad-wallet",
       "permissions": [
         "RECORD_AUDIO",
         "USE_BIOMETRIC",
