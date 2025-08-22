@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "HeySalad Wallet",
+    "name": "HeySalad® Wallet",
     "slug": "heysalad-wallet",
     "version": "1.0.4",
     "orientation": "portrait",
@@ -21,8 +21,8 @@
           "audio",
           "audio"
         ],
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
-        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to use Face ID.",
+        "NSMicrophoneUsageDescription": "Allow HeySalad® Wallet to access your microphone for voice payments",
+        "NSFaceIDUsageDescription": "Allow HeySalad® Wallet to use Face ID to securely authorize transactions and protect your private keys.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -54,22 +54,23 @@
       [
         "expo-av",
         {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone"
+          "microphonePermission": "Allow HeySalad® Wallet to access your microphone for voice payments"
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID."
+          "faceIDPermission": "Allow HeySalad® Wallet to use Face ID to securely authorize transactions."
         }
       ],
       [
         "expo-secure-store",
         {
           "configureAndroidBackup": true,
-          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
+          "faceIDPermission": "Allow HeySalad® Wallet to access your Face ID biometric data to protect your private keys."
         }
-      ]
+      ],
+      "expo-barcode-scanner"
     ],
     "experiments": {
       "typedRoutes": true

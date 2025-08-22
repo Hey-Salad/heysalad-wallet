@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, ImageSourcePropType, Platform, StyleSheet, View } from "react-native";
+import Colors from "@/constants/colors";
 
 const shocked = require("@/assets/images/_HSK-SHOCKED.png");
 const speedy = require("@/assets/images/HSK-SPEEDY.png");
@@ -12,9 +13,16 @@ type Props = {
   mood?: TomatoMood;
   animated?: boolean;
   testID?: string;
+  containerStyle?: object; // Allow custom container styling
 };
 
-const TomatoMascot: React.FC<Props> = ({ size = 96, mood = "cycle", animated = false, testID }) => {
+const TomatoMascot: React.FC<Props> = ({ 
+  size = 96, 
+  mood = "cycle", 
+  animated = false, 
+  testID,
+  containerStyle 
+}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const index = useRef(0);
@@ -24,15 +32,40 @@ const TomatoMascot: React.FC<Props> = ({ size = 96, mood = "cycle", animated = f
     if (!animated) return;
     const bounce = Animated.loop(
       Animated.sequence([
-        Animated.timing(scale, { toValue: 1.04, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: Platform.OS !== "web" }),
-        Animated.timing(scale, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(scale, { 
+          toValue: 1.04, 
+          duration: 800, 
+          easing: Easing.out(Easing.quad), 
+          useNativeDriver: Platform.OS !== "web" 
+        }),
+        Animated.timing(scale, { 
+          toValue: 1, 
+          duration: 800, 
+          easing: Easing.inOut(Easing.quad), 
+          useNativeDriver: Platform.OS !== "web" 
+        }),
       ])
     );
     const wiggle = Animated.loop(
       Animated.sequence([
-        Animated.timing(rotate, { toValue: 1, duration: 600, easing: Easing.linear, useNativeDriver: Platform.OS !== "web" }),
-        Animated.timing(rotate, { toValue: -1, duration: 600, easing: Easing.linear, useNativeDriver: Platform.OS !== "web" }),
-        Animated.timing(rotate, { toValue: 0, duration: 400, easing: Easing.linear, useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(rotate, { 
+          toValue: 1, 
+          duration: 600, 
+          easing: Easing.linear, 
+          useNativeDriver: Platform.OS !== "web" 
+        }),
+        Animated.timing(rotate, { 
+          toValue: -1, 
+          duration: 600, 
+          easing: Easing.linear, 
+          useNativeDriver: Platform.OS !== "web" 
+        }),
+        Animated.timing(rotate, { 
+          toValue: 0, 
+          duration: 400, 
+          easing: Easing.linear, 
+          useNativeDriver: Platform.OS !== "web" 
+        }),
       ])
     );
 
@@ -63,13 +96,23 @@ const TomatoMascot: React.FC<Props> = ({ size = 96, mood = "cycle", animated = f
     return () => clearInterval(id);
   }, [images, mood, animated]);
 
-  const rotateDeg = rotate.interpolate({ inputRange: [-1, 1], outputRange: ["-3deg", "3deg"] });
+  const rotateDeg = rotate.interpolate({ 
+    inputRange: [-1, 1], 
+    outputRange: ["-3deg", "3deg"] 
+  });
 
   return (
-    <View style={styles.wrapper} testID={testID ?? "tomato-mascot"}>
+    <View 
+      style={[styles.wrapper, containerStyle]} 
+      testID={testID ?? "tomato-mascot"}
+    >
       <Animated.Image
         source={current}
-        style={{ width: size, height: size, transform: animated ? [{ scale }, { rotate: rotateDeg }] : undefined }}
+        style={{ 
+          width: size, 
+          height: size, 
+          transform: animated ? [{ scale }, { rotate: rotateDeg }] : undefined 
+        }}
         resizeMode="contain"
       />
     </View>
@@ -77,7 +120,13 @@ const TomatoMascot: React.FC<Props> = ({ size = 96, mood = "cycle", animated = f
 };
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff", borderRadius: 24, padding: 8 },
+  wrapper: { 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "transparent", // Changed from white to transparent
+    borderRadius: 24, 
+    padding: 8 
+  },
 });
 
 export default React.memo(TomatoMascot);
