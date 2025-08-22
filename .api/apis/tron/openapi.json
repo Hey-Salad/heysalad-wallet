@@ -1,0 +1,1300 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TronGrid v1 API",
+    "version": "unknown"
+  },
+  "servers": [
+    {
+      "url": "https://api.shasta.trongrid.io"
+    }
+  ],
+  "components": {
+    "securitySchemes": {}
+  },
+  "security": [
+    {}
+  ],
+  "paths": {
+    "/v1/accounts/{address}": {
+      "get": {
+        "summary": "Get account info by address",
+        "description": "",
+        "operationId": "get-account-info-by-address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "owner address in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true (If no param is specified, then only confirmed)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true (If no param is specified, then only confirmed)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/accounts/{address}/transactions": {
+      "get": {
+        "summary": "Get transaction info by account address",
+        "description": "",
+        "operationId": "get-transaction-info-by-account-address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "owner address in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_unconfirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_confirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_to",
+            "in": "query",
+            "description": "true | false. If true, only transactions to this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_from",
+            "in": "query",
+            "description": "true | false. If true, only transactions from this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "fingerprint of the last transaction returned by the previous page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "block_timestamp,asc | block_timestamp,desc (default)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_timestamp",
+            "in": "query",
+            "description": "minimum block_timestamp, default 0",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "max_timestamp",
+            "in": "query",
+            "description": "maximum block_timestamp, default now",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/assets": {
+      "get": {
+        "summary": "List all assets(TRC10 tokens) on chain",
+        "description": "",
+        "operationId": "list-all-assets-trc10-tokens-on-chain",
+        "parameters": [
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "order_by = total_supply,asc | total_supply,desc | start_time,asc | start_time,desc | end_time,asc | end_time,desc | id,asc | id,desc (default)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "number of assets per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "fingerprint of the last asset returned by the previous page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/transactions/{transactionID}/events": {
+      "get": {
+        "summary": "Get events by transaction id",
+        "description": "",
+        "operationId": "get-events-by-transaction-id",
+        "parameters": [
+          {
+            "name": "transactionID",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/contracts/{address}/events": {
+      "get": {
+        "summary": "Get events by contract address",
+        "description": "",
+        "operationId": "get-events-by-contract-address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "contract address in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "event_name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "block_number",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "min_block_timestamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "max_block_timestamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "block_timestamp,desc | block_timestamp,asc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/assets/{identifier}": {
+      "get": {
+        "summary": "Get asset by id or issuer",
+        "description": "",
+        "operationId": "get-asset-by-id-or-issuer",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "description": "id of the asset or the owner address of the asset in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false (default), it returns both confirmed and unconfirmed transactions.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/assets/{name}/list": {
+      "get": {
+        "summary": "Get assets by name",
+        "description": "NOTE: Multiple assets may have the same name.",
+        "operationId": "get-asset-by-name",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "name of the asset(s)",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "number of assets per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "fingerprint of the last asset returned by the previous page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "order_by = total_supply,asc | total_supply,desc | start_time,asc | start_time,desc | end_time,asc | end_time,desc | id,asc | id,desc (default)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed assets.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/blocks/latest/events": {
+      "get": {
+        "summary": "Get events of latest block",
+        "description": "",
+        "operationId": "get-events-by-latest-block",
+        "parameters": [
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true or false (it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/blocks/{block_number}/events": {
+      "get": {
+        "summary": "Get events by block number",
+        "description": "",
+        "operationId": "get-events-by-block-number",
+        "parameters": [
+          {
+            "name": "block_number",
+            "in": "path",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true or false (it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "The fingerprint in the meta data to get to the next page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/contracts/{contractAddress}/transactions": {
+      "get": {
+        "summary": "Get transaction info by contract address",
+        "description": "",
+        "operationId": "get-transaction-info-by-contract-address",
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "in": "path",
+            "description": "The address of contract in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true or false (it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true or false(it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "min_block_timestamp",
+            "in": "query",
+            "description": "Minimal block timestamp",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "max_block_timestamp",
+            "in": "query",
+            "description": "Maximal block timestamp",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "block_timestamp,desc | block_timestamp,asc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "The fingerprint in the meta data to get to the next page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search_internal",
+            "in": "query",
+            "description": "true | false(default). If true, query params applied to both normal and internal transactions. If false, query params only applied to trigger transactions.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": ""
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/contracts/{contractAddress}/tokens": {
+      "get": {
+        "summary": "Get TRC20 token holder balances",
+        "description": "",
+        "operationId": "get-trc20-token-holder-balances",
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "in": "path",
+            "description": "The address of contract in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true or false (it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true or false(it has to be in lower case)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "balance,desc | balance,asc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "The fingerprint in the meta data to get to the next page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": ""
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/accounts/{address}/transactions/trc20": {
+      "get": {
+        "summary": "Get contract transaction info by account address",
+        "description": "Get the historical TRC20, TRC721 transfer records and authorization records of an account",
+        "operationId": "get-trc20-transaction-info-by-account-address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "owner address in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_unconfirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_confirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "fingerprint of the last transaction returned by the previous page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "block_timestamp,asc | block_timestamp,desc (default)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_timestamp",
+            "in": "query",
+            "description": "minimum block_timestamp, default 0",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "max_timestamp",
+            "in": "query",
+            "description": "maximum block_timestamp, default now",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "contract_address",
+            "in": "query",
+            "description": "contract address in base58 or hex",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "only_to",
+            "in": "query",
+            "description": "true | false. If true, only transactions to this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_from",
+            "in": "query",
+            "description": "true | false. If true, only transactions from this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/accounts/{address}/internal-transactions": {
+      "get": {
+        "summary": "Get internal transactions by address",
+        "description": "",
+        "operationId": "get-internal-transactions-by-address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "owner address in base58 or hex",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_unconfirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_confirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_to",
+            "in": "query",
+            "description": "true | false. If true, only transactions to this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_from",
+            "in": "query",
+            "description": "true | false. If true, only transactions from this address, default: false",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "number of transactions per page, default 20, max 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fingerprint",
+            "in": "query",
+            "description": "fingerprint of the last transaction returned by the previous page; when using it, the other parameters and filters should remain the same",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "block_timestamp,asc | block_timestamp,desc (default)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_timestamp",
+            "in": "query",
+            "description": "minimum block_timestamp, default 0",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "max_timestamp",
+            "in": "query",
+            "description": "maximum block_timestamp, default now",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/transactions/{transactionId}/internal-transactions": {
+      "get": {
+        "summary": "Get internal transactions by transaction ID",
+        "description": "",
+        "operationId": "get-internal-transactions-by-transactionid",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "only_confirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_unconfirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "only_unconfirmed",
+            "in": "query",
+            "description": "true | false. If false, it returns both confirmed and unconfirmed transactions. If no param is specified, it returns both confirmed and unconfirmed transactions. Cannot be used at the same time with only_confirmed param.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": []
+  },
+  "x-readme-fauxas": true
+}
