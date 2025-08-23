@@ -1,5 +1,5 @@
 // app/(tabs)/(wallet)/index.tsx
-// Fixed wallet home with correct wallet properties
+// Clean wallet home with just HeySalad logo (no text header)
 
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, Image } from "react-native";
@@ -7,8 +7,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useWallet } from "@/providers/WalletProvider";
 import { useRouter } from "expo-router";
-import { ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users } from "lucide-react-native";
+import { ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users, Mic } from "lucide-react-native";
+import { Ionicons } from '@expo/vector-icons';
 import ReceiveModal from "@/components/ReceiveModal";
+import SelinaVoiceModal from "@/components/SelinaVoiceModal";
 import * as Clipboard from 'expo-clipboard';
 
 // Helper function to shorten address
@@ -19,7 +21,6 @@ const shortAddr = (addr: string) => {
 
 // Helper function to safely get wallet balance
 const getWalletBalance = (wallet: any): number => {
-  // Try various possible property names for TRX balance
   return wallet.balance || 
          wallet.tronBalance || 
          wallet.balanceTrx || 
@@ -35,6 +36,7 @@ export default function WalletHome() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [balanceVisible, setBalanceVisible] = React.useState(true);
   const [showReceive, setShowReceive] = useState(false);
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -78,7 +80,19 @@ export default function WalletHome() {
     router.push('/(tabs)/social');
   };
 
-  // Calculate total balance in GBP (using safe getter)
+  // Handle Voice Assistant button press
+  const handleVoiceAssistant = () => {
+    console.log('[Wallet] Voice assistant button pressed - opening Selina');
+    setShowVoiceAssistant(true);
+  };
+
+  // Handle Settings button press
+  const handleSettings = () => {
+    console.log('[Wallet] Settings button pressed');
+    router.push('/(tabs)/(wallet)/settings');
+  };
+
+  // Calculate total balance in GBP
   const totalBalanceGBP = useMemo(() => {
     const trxBalance = getWalletBalance(wallet);
     const trxInGBP = trxBalance * 0.12; // 1 TRX = £0.12
@@ -91,7 +105,7 @@ export default function WalletHome() {
   const realTokens = useMemo(() => {
     const tokens = [];
     
-    // Add TRX if balance > 0 (using safe getter)
+    // Add TRX if balance > 0
     const trxBalance = getWalletBalance(wallet);
     if (trxBalance > 0) {
       tokens.push({
@@ -111,10 +125,19 @@ export default function WalletHome() {
 
   const renderHeader = () => (
     <View style={styles.header}>
+      {/* Clean Centered Logo */}
+      <View style={styles.logoContainer}>
+        <Image 
+          source={require("@/assets/images/HeySalad_black_logo.png")} 
+          style={styles.logo} 
+          resizeMode="contain" 
+        />
+      </View>
+
       {/* Balance Card */}
       <View style={styles.balanceCard}>
         <View style={styles.balanceHeader}>
-          <View>
+          <View style={styles.balanceContent}>
             <Text style={styles.balanceLabel}>BALANCE</Text>
             <View style={styles.balanceRow}>
               <Text style={styles.balanceValue}>
@@ -140,11 +163,15 @@ export default function WalletHome() {
               </Text>
             </View>
           </View>
-          <Image 
-            source={require("@/assets/images/HSK-SPEEDY.png")} 
-            style={styles.speedyImage} 
-            resizeMode="contain" 
-          />
+          
+          {/* Voice Assistant Button */}
+          <TouchableOpacity 
+            style={styles.voiceButton} 
+            onPress={handleVoiceAssistant}
+            activeOpacity={0.7}
+          >
+            <Mic color={Colors.brand.white} size={24} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -172,6 +199,9 @@ export default function WalletHome() {
         </View>
         <TouchableOpacity onPress={copyAddress} style={styles.copyButton}>
           <Copy color={Colors.brand.cherryRed} size={16} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleSettings} style={styles.copyButton}>
+          <Ionicons name="settings-outline" size={16} color={Colors.brand.cherryRed} />
         </TouchableOpacity>
       </View>
 
@@ -235,12 +265,22 @@ export default function WalletHome() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={false}
+        keyboardShouldPersistTaps="handled"
       />
       
       {/* Receive Modal */}
       <ReceiveModal 
         visible={showReceive} 
         onClose={() => setShowReceive(false)}
+      />
+
+      {/* Selina Voice Assistant Modal */}
+      <SelinaVoiceModal 
+        visible={showVoiceAssistant} 
+        onClose={() => setShowVoiceAssistant(false)}
+        currentBalance={getWalletBalance(wallet)}
+        walletAddress={wallet.address}
       />
     </View>
   );
@@ -255,6 +295,15 @@ const styles = StyleSheet.create({
     padding: 20, 
     gap: 20 
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  logo: {
+    height: 40,
+    width: 200,
+  },
   balanceCard: {
     backgroundColor: Colors.brand.white,
     borderRadius: 24,
@@ -268,6 +317,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+  },
+  balanceContent: {
+    flex: 1,
   },
   balanceLabel: {
     color: Colors.brand.inkMuted,
@@ -301,9 +353,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600" as const,
   },
-  speedyImage: {
-    width: 80,
-    height: 80,
+  voiceButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.brand.cherryRed,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.brand.cherryRed,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   actionButtons: {
     flexDirection: "row",
