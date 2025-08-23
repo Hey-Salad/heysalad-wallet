@@ -58,7 +58,7 @@ This prototype demonstrates potential innovations in:
 |-------------|---------------|-----------------|------------------|
 | ![Home](screenshots/app_image1.png) | ![Voice](screenshots/app_image2.png) | ![Methods](screenshots/app_image3.png) | ![Flow](screenshots/app_image4.png) |
 
-| AI Assistant | Security | QR Scanner | Success Screen |
+| AI Assistant | Manual Payment | QR Scanner | Success Screen |
 |--------------|----------|------------|----------------|
 | ![AI](screenshots/app_image5.png) | ![Security](screenshots/app_image6.png) | ![QR](screenshots/app_image7.png) | ![Success](screenshots/app_image8.png) |
 
