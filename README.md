@@ -54,7 +54,7 @@ This prototype demonstrates potential innovations in:
 
 ## 📱 **Screenshots**
 
-| Home Screen | Voice Payment | Payment Methods | Transaction Flow |
+| Home Screen | Voice Payment | Payment Methods | Home Screen |
 |-------------|---------------|-----------------|------------------|
 | ![Home](screenshots/app_image1.png) | ![Voice](screenshots/app_image2.png) | ![Methods](screenshots/app_image3.png) | ![Flow](screenshots/app_image4.png) |
 
