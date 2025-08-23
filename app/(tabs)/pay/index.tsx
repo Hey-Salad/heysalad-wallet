@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform, Te
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Colors from "@/constants/colors";
-import VoiceRecorder from "@/features/voice/VoiceRecorder";
+import AudioPay from "@/components/AudioPay";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
 import { parseVoiceToIntent } from "@/features/voice/intent";
 import { Stack } from "expo-router";
-import { Check, ExternalLink, QrCode, Mic, Keyboard, ArrowLeft, X } from "lucide-react-native";
+import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones } from "lucide-react-native";
 
 const { width, height } = Dimensions.get('window');
 
@@ -41,14 +41,14 @@ type PendingIntent = {
   sustainable: boolean;
 };
 
-type PayMethod = "voice" | "text" | "qr";
+type PayMethod = "audio" | "text" | "qr";
 type PayStep = "method" | "input" | "review" | "success";
 
 export default function PayScreen() {
   const insets = useSafeAreaInsets();
   const { send, wallet, refreshBalance } = useWallet();
   const [step, setStep] = useState<PayStep>("method");
-  const [method, setMethod] = useState<PayMethod>("voice");
+  const [method, setMethod] = useState<PayMethod>("audio");
   const [intent, setIntent] = useState<PendingIntent | null>(null);
   const [toAddr, setToAddr] = useState<string>("");
   const [amountStr, setAmountStr] = useState<string>("");
@@ -277,7 +277,8 @@ export default function PayScreen() {
       }
     } catch (e: any) {
       console.error('[Pay] Transaction failed:', e);
-      setError(e.message || "Payment failed. Please try again.");
+      const errorMsg = e.message || "Payment failed. Please try again.";
+      setError(errorMsg);
     } finally {
       setProcessing(false);
     }
@@ -323,14 +324,14 @@ export default function PayScreen() {
       
       <View style={styles.methodGrid}>
         <HSButton
-          title="Voice Pay"
+          title="Audio Pay"
           variant="primary"
-          leftIcon={<Mic color={Colors.brand.white} size={20} />}
+          leftIcon={<Headphones color={Colors.brand.white} size={22} />}
           onPress={() => {
-            setMethod("voice");
+            setMethod("audio");
             setStep("input");
           }}
-          style={styles.methodCard}
+          style={{...styles.methodCard, ...styles.audioPayCard}}
         />
         
         <HSButton
@@ -366,7 +367,7 @@ export default function PayScreen() {
           style={styles.backButton}
         />
         <Text style={styles.stepTitle}>
-          {method === "voice" ? "Voice Payment" : 
+          {method === "audio" ? "Audio Payment" : 
            method === "qr" ? "Scan QR Code" : "Enter Details"}
         </Text>
         {method === "qr" && (
@@ -380,17 +381,13 @@ export default function PayScreen() {
         )}
       </View>
 
-      {method === "voice" && (
-        <View style={styles.voiceContainer}>
-          <Image 
-            source={require("@/assets/images/HSK-SPEEDY.png")} 
-            style={styles.mascotImage} 
-            resizeMode="contain" 
+      {method === "audio" && (
+        <View style={styles.audioContainer}>
+          <AudioPay 
+            onTranscript={onTranscript}
+            currentBalance={balance.trx}
+            onCancel={() => setStep("method")}
           />
-          <VoiceRecorder onTranscript={onTranscript} />
-          <Text style={styles.voiceHelp}>
-            Try saying: "Send 5 TRX to TLyqzVGLV1srkB7dToTAEqgDSfPtXRJZYH"
-          </Text>
         </View>
       )}
 
@@ -492,7 +489,11 @@ export default function PayScreen() {
         </View>
       )}
       
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
     </View>
   );
 
@@ -670,19 +671,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.brand.cherryRed,
   },
-  voiceContainer: {
+  audioPayCard: {
+    backgroundColor: '#ed4c4c', // Same cherry red as other buttons
+    shadowColor: '#ed4c4c',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  audioContainer: {
     alignItems: "center",
     gap: 24,
-  },
-  mascotImage: {
-    width: 120,
-    height: 120,
-  },
-  voiceHelp: {
-    fontSize: 14,
-    color: Colors.brand.inkMuted,
-    textAlign: "center",
-    fontStyle: "italic",
+    width: "100%",
   },
   qrContainer: {
     flex: 1,
@@ -916,10 +916,18 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: Colors.brand.cherryRed,
   },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.brand.cherryRed,
+  },
   errorText: {
     color: Colors.brand.cherryRed,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     textAlign: "center",
-    marginTop: 16,
+    fontSize: 14,
   },
 });
