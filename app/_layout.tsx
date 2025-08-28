@@ -82,10 +82,24 @@ export default function RootLayout() {
         console.log("[Splash] preventAutoHideAsync error", e);
       }
     })();
+
+    const fallback = setTimeout(() => {
+      try {
+        SplashScreen.hideAsync();
+      } catch (e) {
+        console.log("[Splash] fallback hide error", e);
+      }
+    }, 2000);
+
+    return () => clearTimeout(fallback);
   }, []);
 
   const onReady = useCallback(() => {
-    SplashScreen.hideAsync();
+    try {
+      SplashScreen.hideAsync();
+    } catch (e) {
+      console.log("[Splash] hideAsync error", e);
+    }
   }, []);
 
   return (
