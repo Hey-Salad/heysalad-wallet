@@ -1,7 +1,4 @@
-// components/SelinaVoiceModal.tsx
-// SIMPLE WORKING VERSION - Focus on getting basic functionality working
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,15 +10,12 @@ import {
   Image,
   Alert,
   ScrollView,
-  StatusBar,
+  Platform,
 } from 'react-native';
-import { Audio } from 'expo-av';
 import { 
   Mic, 
-  MicOff, 
   Volume2, 
   VolumeX, 
-  Phone, 
   PhoneOff, 
   Minus, 
   X,
@@ -29,7 +23,32 @@ import {
   Loader2
 } from 'lucide-react-native';
 
+// Import TTS - this will actually work
+let Tts: any = null;
+try {
+  Tts = require('react-native-tts').default;
+  // Initialize TTS if available
+  if (Tts) {
+    Tts.setDefaultLanguage('en-US');
+    Tts.setDefaultRate(0.5);
+  }
+} catch (error) {
+  console.log('[Selina] TTS not available:', error);
+}
+
 const { width, height } = Dimensions.get('window');
+
+// Brand Colors
+const COLORS = {
+  cherryRed: '#ed4c4c',
+  peach: '#faa09a', 
+  lightPeach: '#ffd0cd',
+  white: '#ffffff',
+  gray: '#6B7280',
+  darkGray: '#374151',
+  green: '#10B981',
+  backdrop: 'rgba(0, 0, 0, 0.8)'
+};
 
 interface SelinaVoiceModalProps {
   visible: boolean;
@@ -47,17 +66,66 @@ interface ConversationMessage {
 
 type ConversationState = 'disconnected' | 'connecting' | 'ready' | 'listening' | 'thinking' | 'speaking';
 
-// Brand Colors
-const COLORS = {
-  cherryRed: '#ed4c4c',
-  peach: '#faa09a', 
-  lightPeach: '#ffd0cd',
-  white: '#ffffff',
-  gray: '#6B7280',
-  darkGray: '#374151',
-  green: '#10B981',
-  lightGreen: '#D1FAE5',
-  backdrop: 'rgba(0, 0, 0, 0.8)'
+// WORKING TTS function
+const speakText = async (text: string, onFinish?: () => void) => {
+  try {
+    if (Tts && Tts.speak) {
+      console.log('[Selina] 🗣️ Speaking:', text);
+      
+      // Configure TTS for British female voice with error handling
+      if (Platform.OS === 'ios') {
+        try {
+          await Tts.setDefaultVoice('com.apple.ttsbundle.Moira-compact'); // British female
+        } catch (voiceError) {
+          console.log('[Selina] Voice setting failed, using default');
+        }
+      }
+      
+      try {
+        await Tts.setDefaultRate(0.5); // Slower, more elegant
+        await Tts.setDefaultPitch(1.0);
+      } catch (configError) {
+        console.log('[Selina] TTS config failed, using defaults');
+      }
+      
+      // Set up finish listener with error handling
+      if (onFinish) {
+        try {
+          const finishListener = Tts.addEventListener('tts-finish', () => {
+            console.log('[Selina] ✅ TTS finished');
+            try {
+              Tts.removeEventListener('tts-finish', finishListener);
+            } catch (removeError) {
+              console.log('[Selina] Error removing TTS listener');
+            }
+            onFinish();
+          });
+        } catch (listenerError) {
+          console.log('[Selina] TTS listener setup failed, using timeout fallback');
+          // Fallback to timeout if listener setup fails
+          setTimeout(() => {
+            if (onFinish) onFinish();
+          }, Math.max(2000, text.length * 50));
+        }
+      }
+      
+      // Speak the text
+      await Tts.speak(text);
+      
+    } else {
+      console.log('[Selina] 🗣️ TTS not available, would speak:', text);
+      // Fallback: just simulate speaking time
+      setTimeout(() => {
+        if (onFinish) onFinish();
+      }, Math.max(2000, text.length * 80));
+    }
+  } catch (error) {
+    console.error('[Selina] TTS error:', error);
+    // Fallback: simulate speaking time
+    setTimeout(() => {
+      if (onFinish) onFinish();
+    }, Math.max(2000, text.length * 50));
+  }
 };
 
 export default function SelinaVoiceModal({
@@ -66,8 +134,6 @@ export default function SelinaVoiceModal({
   currentBalance,
   walletAddress,
 }: SelinaVoiceModalProps) {
-  console.log('[SelinaModal] Rendered - visible:', visible);
-  
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -81,18 +147,8 @@ export default function SelinaVoiceModal({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
   
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const websocketRef = useRef<WebSocket | null>(null);
-  const isConnectedRef = useRef(false);
-
-  // ElevenLabs Configuration
-  const ELEVENLABS_CONFIG = {
-    apiKey: process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY,
-    agentId: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID,
-    websocketUrl: 'wss://api.elevenlabs.io/v1/convai/conversation',
-  };
 
   // Timer logic
   useEffect(() => {
@@ -121,128 +177,6 @@ export default function SelinaVoiceModal({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Simple audio setup
-  const setupAudio = async () => {
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-        interruptionModeIOS: 1,
-        interruptionModeAndroid: 1,
-      });
-    } catch (error) {
-      console.log('[Selina] Audio setup:', error);
-    }
-  };
-
-  // Simple WebSocket connection
-  const startConversation = useCallback(async () => {
-    if (isConnectedRef.current) {
-      console.log('[Selina] Already connected');
-      return;
-    }
-
-    try {
-      console.log('[Selina] 🚀 Starting conversation...');
-      setConversationState('connecting');
-      
-      // Audio permission
-      const audioPermission = await Audio.requestPermissionsAsync();
-      if (audioPermission.status !== 'granted') {
-        Alert.alert('Permission Required', 'Please enable microphone access');
-        setConversationState('disconnected');
-        return;
-      }
-
-      await setupAudio();
-
-      if (!ELEVENLABS_CONFIG.apiKey || !ELEVENLABS_CONFIG.agentId) {
-        throw new Error('Missing ElevenLabs configuration');
-      }
-
-      // Create WebSocket
-      const wsUrl = `${ELEVENLABS_CONFIG.websocketUrl}?agent_id=${ELEVENLABS_CONFIG.agentId}`;
-      console.log('[Selina] Connecting to:', wsUrl);
-      
-      websocketRef.current = new WebSocket(wsUrl);
-      isConnectedRef.current = true;
-
-      websocketRef.current.onopen = () => {
-        console.log('[Selina] ✅ WebSocket connected');
-        
-        // Send simple init message
-        const initMessage = { type: 'conversation_initiation_client_data' };
-        websocketRef.current?.send(JSON.stringify(initMessage));
-        
-        setConversationState('ready');
-        setCallStartTime(new Date());
-        
-        // Add welcome message
-        setTimeout(() => {
-          addSelinaMessage("Right then! I'm Selina from HeySalad. I can see you have 1983.9 TRX. How may I assist you today?");
-        }, 1000);
-      };
-
-      websocketRef.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          console.log('[Selina] Message type:', message.type);
-          
-          switch (message.type) {
-            case 'conversation_initiation_metadata':
-              console.log('[Selina] Session started');
-              break;
-              
-            case 'audio':
-              console.log('[Selina] 🔊 Audio received');
-              // For now, just acknowledge audio received
-              break;
-              
-            case 'agent_response':
-              console.log('[Selina] 🗣️ Agent says:', message.agent_response);
-              if (message.agent_response) {
-                addSelinaMessage(message.agent_response);
-              }
-              break;
-
-            case 'user_transcript':
-              console.log('[Selina] 📝 User said:', message.user_transcript);
-              if (message.user_transcript) {
-                addUserMessage(message.user_transcript);
-              }
-              break;
-
-            case 'ping':
-              websocketRef.current?.send(JSON.stringify({ type: 'pong' }));
-              break;
-          }
-        } catch (error) {
-          console.log('[Selina] Message parse error:', error);
-        }
-      };
-
-      websocketRef.current.onerror = (error) => {
-        console.log('[Selina] WebSocket error:', error);
-        setConversationState('disconnected');
-        isConnectedRef.current = false;
-      };
-
-      websocketRef.current.onclose = () => {
-        console.log('[Selina] WebSocket closed');
-        setConversationState('disconnected');
-        isConnectedRef.current = false;
-      };
-
-    } catch (error) {
-      console.error('[Selina] ❌ Connection failed:', error);
-      setConversationState('disconnected');
-      isConnectedRef.current = false;
-    }
-  }, []);
-
   // Add messages to conversation
   const addUserMessage = (text: string) => {
     const message: ConversationMessage = {
@@ -254,7 +188,7 @@ export default function SelinaVoiceModal({
     setConversation(prev => [...prev, message]);
   };
 
-  const addSelinaMessage = (text: string) => {
+  const addSelinaMessage = (text: string, shouldSpeak = true) => {
     const message: ConversationMessage = {
       id: (Date.now() + 1).toString(),
       type: 'selina',
@@ -262,66 +196,69 @@ export default function SelinaVoiceModal({
       timestamp: new Date(),
     };
     setConversation(prev => [...prev, message]);
+    
+    if (shouldSpeak && !isMuted) {
+      setConversationState('speaking');
+      speakText(text, () => {
+        setConversationState('ready');
+      });
+    }
   };
 
-  // Simulate listening (for now)
-  const startListening = async () => {
-    try {
-      console.log('[Selina] 🎙️ Listening...');
-      setConversationState('listening');
-
-      // Simulate listening for 3 seconds
-      setTimeout(() => {
-        // Simulate user input
-        const userInputs = [
-          "What's my current balance?",
-          "How do I send TRX?",
-          "Is my wallet secure?",
-          "Show me my address",
-          "Help me with payments"
-        ];
-        const randomInput = userInputs[Math.floor(Math.random() * userInputs.length)];
-        
-        addUserMessage(randomInput);
-        setConversationState('thinking');
-        
-        // Simulate Selina response
-        setTimeout(() => {
-          const responses = [
-            `Right then, your balance is ${currentBalance} TRX, worth approximately £${(currentBalance * 0.12).toFixed(2)}. Quite healthy indeed!`,
-            "Brilliant! To send TRX, I'll guide you through the Face ID authentication process. Shall we proceed?",
-            "Absolutely! Your HeySalad wallet uses banking-grade security with Face ID protection. Everything is encrypted.",
-            `Your TRON address is ${walletAddress.slice(0, 12)}... Would you like me to help you share it securely?`,
-            "I do say, I'm here to help with all your crypto needs! What specific assistance would you like?"
-          ];
-          const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-          
-          addSelinaMessage(randomResponse);
-          setConversationState('ready');
-        }, 2000);
-        
-      }, 3000);
-
-    } catch (error) {
-      console.error('[Selina] Listen failed:', error);
+  // Connect to Selina
+  const startConversation = () => {
+    console.log('[Selina] 🚀 Starting demo conversation...');
+    setConversationState('connecting');
+    
+    setTimeout(() => {
       setConversationState('ready');
-    }
+      setCallStartTime(new Date());
+      
+      const welcomeMessage = `Right then! I'm Selina from HeySalad. I can see you have ${currentBalance.toFixed(1)} TRX in your wallet, worth about £${(currentBalance * 0.12).toFixed(2)}. How may I assist you today?`;
+      addSelinaMessage(welcomeMessage);
+    }, 1500);
+  };
+
+  // Simulate conversation
+  const simulateConversation = () => {
+    console.log('[Selina] 🎭 Starting demo conversation...');
+    setConversationState('listening');
+
+    setTimeout(() => {
+      const userInputs = [
+        "What's my current balance?",
+        "How do I send TRX to someone?",
+        "Is my wallet secure?",
+        "Show me my transaction history",
+        "Help me understand crypto payments"
+      ];
+      const randomInput = userInputs[Math.floor(Math.random() * userInputs.length)];
+      
+      addUserMessage(randomInput);
+      setConversationState('thinking');
+      
+      setTimeout(() => {
+        const responses = [
+          `Brilliant! Your current balance is ${currentBalance.toFixed(1)} TRX, which is worth approximately £${(currentBalance * 0.12).toFixed(2)}. Looking quite healthy, I must say!`,
+          "Excellent question! To send TRX, simply tap the send button, enter the recipient's address, and I'll guide you through our secure Face ID authentication process. Shall we give it a go?",
+          "Absolutely! Your HeySalad wallet uses banking-grade security with military-level encryption and biometric protection. Your crypto is safer than the Crown Jewels, darling!",
+          `Your TRON address is ${walletAddress.slice(0, 12)}... and you've had quite a bit of activity lately. Would you like me to walk you through your recent transactions?`,
+          "I do say, I'm here to help with all your crypto needs! Whether it's sending payments, checking balances, or understanding blockchain technology, I'm at your service. What would you like to learn about?"
+        ];
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        addSelinaMessage(randomResponse);
+      }, 2000);
+    }, 2500);
   };
 
   // End conversation
-  const endConversation = useCallback(() => {
+  const endConversation = () => {
     console.log('[Selina] Ending conversation');
-    
-    if (websocketRef.current) {
-      websocketRef.current.close();
-      websocketRef.current = null;
-    }
-    
-    isConnectedRef.current = false;
     setConversationState('disconnected');
     setCallStartTime(null);
     setCallDuration(0);
-  }, []);
+  };
 
   // Animations
   useEffect(() => {
@@ -335,7 +272,7 @@ export default function SelinaVoiceModal({
     } else {
       pulseAnim.setValue(1);
     }
-  }, [conversationState, pulseAnim]);
+  }, [conversationState]);
 
   useEffect(() => {
     if (conversationState === 'listening') {
@@ -345,20 +282,16 @@ export default function SelinaVoiceModal({
           Animated.timing(waveAnim, { toValue: 0, duration: 800, useNativeDriver: false }),
         ])
       ).start();
-    } else {
-      waveAnim.setValue(0);
     }
-  }, [conversationState, waveAnim]);
+  }, [conversationState]);
 
   useEffect(() => {
     if (conversationState === 'thinking') {
       Animated.loop(
         Animated.timing(spinAnim, { toValue: 1, duration: 2000, useNativeDriver: false })
       ).start();
-    } else {
-      spinAnim.setValue(0);
     }
-  }, [conversationState, spinAnim]);
+  }, [conversationState]);
 
   useEffect(() => {
     if (visible && !isMinimized) {
@@ -371,7 +304,7 @@ export default function SelinaVoiceModal({
     } else {
       modalSlideAnim.setValue(height);
     }
-  }, [visible, isMinimized, modalSlideAnim]);
+  }, [visible, isMinimized]);
 
   useEffect(() => {
     if (isMinimized) {
@@ -384,14 +317,7 @@ export default function SelinaVoiceModal({
     } else {
       minimizedScale.setValue(0);
     }
-  }, [isMinimized, minimizedScale]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      endConversation();
-    };
-  }, [endConversation]);
+  }, [isMinimized]);
 
   // UI handlers
   const handleClose = () => {
@@ -411,7 +337,7 @@ export default function SelinaVoiceModal({
         startConversation();
         break;
       case 'ready':
-        startListening();
+        simulateConversation();
         break;
     }
   };
@@ -441,15 +367,15 @@ export default function SelinaVoiceModal({
       case 'disconnected':
         return 'Tap the button below to start chatting with Selina';
       case 'connecting':
-        return 'Connecting to Selina via WebSocket...';
+        return 'Connecting to Selina...';
       case 'ready':
-        return 'Connected! Ask me anything about your wallet or crypto payments.';
+        return 'Connected! Tap the mic for a demo conversation with Selina.';
       case 'listening':
-        return 'I\'m listening to your question...';
+        return 'Demo conversation in progress...';
       case 'thinking':
         return 'Let me think about that...';
       case 'speaking':
-        return 'Selina is speaking';
+        return 'Selina is responding...';
       default:
         return 'Tap to connect';
     }
@@ -471,9 +397,11 @@ export default function SelinaVoiceModal({
   const getButtonColor = () => {
     switch (conversationState) {
       case 'ready':
-      case 'listening':
         return COLORS.cherryRed;
+      case 'listening':
+        return COLORS.green;
       case 'thinking':
+      case 'speaking':
         return COLORS.peach;
       case 'connecting':
         return COLORS.peach;
@@ -487,7 +415,6 @@ export default function SelinaVoiceModal({
       case 'listening':
         return AudioWaveform;
       case 'thinking':
-        return Loader2;
       case 'connecting':
         return Loader2;
       default:
@@ -531,21 +458,6 @@ export default function SelinaVoiceModal({
               <Text style={styles.minimizedTimerText}>{formatCallDuration(callDuration)}</Text>
             )}
           </TouchableOpacity>
-          
-          <View style={styles.minimizedActions}>
-            <TouchableOpacity 
-              style={styles.minimizedActionButton}
-              onPress={toggleMute}
-            >
-              <VolumeX size={12} color={isMuted ? COLORS.white : COLORS.gray} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.minimizedActionButton, styles.endCallButtonSmall]}
-              onPress={endConversation}
-            >
-              <PhoneOff size={12} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
         </Animated.View>
       )}
 
@@ -555,9 +467,7 @@ export default function SelinaVoiceModal({
         transparent={true}
         animationType="none"
         onRequestClose={handleClose}
-        statusBarTranslucent={true}
       >
-        <StatusBar backgroundColor={COLORS.backdrop} barStyle="light-content" />
         <View style={styles.modalBackdrop}>
           <Animated.View 
             style={[
@@ -630,7 +540,7 @@ export default function SelinaVoiceModal({
                 <TouchableOpacity
                   style={[styles.mainVoiceButton, { backgroundColor: getButtonColor() }]}
                   onPress={handleMainButtonPress}
-                  disabled={conversationState === 'connecting' || conversationState === 'thinking'}
+                  disabled={conversationState === 'connecting' || conversationState === 'thinking' || conversationState === 'speaking'}
                 >
                   <MainIcon size={80} color={COLORS.white} />
                 </TouchableOpacity>
@@ -646,10 +556,10 @@ export default function SelinaVoiceModal({
             {/* Status Info */}
             <View style={styles.statusInfoContainer}>
               <Text style={styles.statusInfo}>
-                Status: WebSocket {conversationState}
+                Balance: {currentBalance} TRX (£{(currentBalance * 0.12).toFixed(2)})
               </Text>
               <Text style={styles.statusInfo}>
-                Balance: {currentBalance} TRX (£{(currentBalance * 0.12).toFixed(2)})
+                Voice: TTS Demo Mode
               </Text>
             </View>
 
@@ -660,7 +570,11 @@ export default function SelinaVoiceModal({
                   style={[styles.controlButtonModal, isMuted && styles.controlButtonActive]}
                   onPress={toggleMute}
                 >
-                  <VolumeX size={28} color={isMuted ? COLORS.white : COLORS.darkGray} />
+                  {isMuted ? (
+                    <VolumeX size={28} color={COLORS.white} />
+                  ) : (
+                    <Volume2 size={28} color={COLORS.darkGray} />
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity 
@@ -671,7 +585,7 @@ export default function SelinaVoiceModal({
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.controlButtonModal}>
-                  <Volume2 size={28} color={COLORS.darkGray} />
+                  <Mic size={28} color={COLORS.darkGray} />
                 </TouchableOpacity>
               </View>
             )}
@@ -682,7 +596,6 @@ export default function SelinaVoiceModal({
   );
 }
 
-// Styles
 const styles = StyleSheet.create({
   minimizedFloatingWidget: {
     position: 'absolute',
@@ -727,22 +640,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 4,
   },
-  minimizedActions: {
-    flexDirection: 'row',
-    marginTop: 8,
-    gap: 8,
-  },
-  minimizedActionButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  endCallButtonSmall: {
-    backgroundColor: COLORS.darkGray,
-  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: COLORS.backdrop,
@@ -764,7 +661,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightPeach + '30',
-    backgroundColor: COLORS.white,
   },
   closeButton: {
     width: 44,
@@ -773,11 +669,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightPeach + '30',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   headerTitleContainer: {
     alignItems: 'center',
@@ -794,11 +685,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightPeach + '30',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   connectionStatusContainer: {
     alignItems: 'center',

@@ -7,17 +7,22 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+// Now using V2 via compatibility shim in WalletProvider.tsx
 import { WalletProvider, useWallet } from "@/providers/WalletProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { NetworkProvider } from "@/providers/NetworkProvider";
+import { SecurityProvider, useSecurity } from "@/providers/SecurityProvider";
+import LockScreen from "@/components/LockScreen";
 import WalletSetup from "@/components/WalletSetup";
 import OnboardingFlow from "@/components/OnboardingFlow";
 
 const queryClient = new QueryClient();
 
-// Component that checks wallet setup status
+// Component that checks wallet setup status and security lock
 function AppNavigator() {
   const { wallet, completeOnboarding } = useWallet();
+  const { isLocked } = useSecurity();
 
   // Create a unique key based on wallet state to force re-renders
   const appKey = `${wallet.isSetup}-${wallet.onboarding.hasCompletedOnboarding}-${wallet.address}`;
@@ -27,8 +32,15 @@ function AppNavigator() {
     isSetup: wallet.isSetup,
     onboardingComplete: wallet.onboarding.hasCompletedOnboarding,
     address: wallet.address,
+    isLocked,
     appKey
   });
+
+  // Show lock screen if wallet is locked (and setup is complete)
+  if (isLocked && wallet.isSetup && wallet.onboarding.hasCompletedOnboarding) {
+    console.log('[App] Wallet is locked, showing lock screen');
+    return <LockScreen />;
+  }
 
   // Show wallet setup if needed
   if (wallet.needsSetup) {
@@ -40,14 +52,14 @@ function AppNavigator() {
   if (wallet.isSetup && !wallet.onboarding.hasCompletedOnboarding) {
     console.log('[App] Showing onboarding flow');
     return (
-      <OnboardingFlow 
+      <OnboardingFlow
         key={appKey}
         onComplete={async () => {
           console.log('[App] Onboarding completion triggered - calling completeOnboarding');
           try {
             await completeOnboarding();
             console.log('[App] Onboarding completed successfully - should show main app now');
-            
+
             // Force a small delay to ensure state is updated
             setTimeout(() => {
               console.log('[App] Post-completion state check:', {
@@ -58,7 +70,7 @@ function AppNavigator() {
           } catch (error) {
             console.error('[App] Failed to complete onboarding:', error);
           }
-        }} 
+        }}
       />
     );
   }
@@ -106,13 +118,17 @@ export default function RootLayout() {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <WalletProvider>
-            <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
-              <ErrorBoundary>
-                <AppNavigator />
-              </ErrorBoundary>
-            </GestureHandlerRootView>
-          </WalletProvider>
+          <NetworkProvider>
+            <SecurityProvider>
+              <WalletProvider>
+                <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
+                  <ErrorBoundary>
+                    <AppNavigator />
+                  </ErrorBoundary>
+                </GestureHandlerRootView>
+              </WalletProvider>
+            </SecurityProvider>
+          </NetworkProvider>
         </AuthProvider>
       </QueryClientProvider>
     </trpc.Provider>

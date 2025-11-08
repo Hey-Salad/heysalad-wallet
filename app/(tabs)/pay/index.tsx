@@ -12,14 +12,11 @@ import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones } from 
 
 const { width, height } = Dimensions.get('window');
 
-// Safe balance getter function (same as wallet)
+// Safe balance getter function
 const getWalletBalance = (wallet: any): number => {
-  return wallet.balance || 
-         wallet.tronBalance || 
-         wallet.balanceTrx || 
-         wallet.balanceInTrx ||
-         wallet.trxBalance ||
-         2000; // Fallback to known balance
+  // Use wallet.balance (primary source from WalletProvider)
+  // Fallback to 0 if no balance is set
+  return wallet.balance ?? wallet.tronBalance ?? 0;
 };
 
 // Define proper response type for sendTrx based on your backend
@@ -550,9 +547,19 @@ export default function PayScreen() {
             <Text style={styles.reviewValue}>{intent.note}</Text>
           </View>
         )}
-        
+      </View>
+
+      {/* Security Warning */}
+      <View style={styles.warningCard}>
+        <Text style={styles.warningTitle}>⚠️ Important</Text>
+        <Text style={styles.warningText}>
+          Double-check the recipient address. Blockchain transactions cannot be reversed.
+        </Text>
+      </View>
+
+      <View style={styles.confirmContainer}>
         <HSButton
-          title={processing ? "Sending..." : "Confirm & Send"}
+          title={processing ? "Sending..." : "Confirm with Biometric"}
           onPress={onConfirm}
           loading={processing}
           leftIcon={processing ? undefined : <Check color={Colors.brand.white} size={16} />}
@@ -831,6 +838,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     gap: 16,
+    marginBottom: 16,
     shadowColor: "#00000015",
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -841,6 +849,28 @@ const styles = StyleSheet.create({
     fontWeight: "900" as const,
     color: Colors.brand.ink,
     marginBottom: 8,
+  },
+  warningCard: {
+    backgroundColor: '#FFF3F0',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.brand.cherryRed,
+  },
+  warningTitle: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: Colors.brand.ink,
+    marginBottom: 4,
+  },
+  warningText: {
+    fontSize: 13,
+    color: Colors.brand.ink,
+    lineHeight: 18,
+  },
+  confirmContainer: {
+    marginTop: 8,
   },
   reviewRow: {
     flexDirection: "row",
@@ -861,7 +891,6 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   confirmButton: {
-    marginTop: 16,
     backgroundColor: Colors.brand.cherryRed,
   },
   successContainer: {

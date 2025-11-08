@@ -7,10 +7,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useWallet } from "@/providers/WalletProvider";
 import { useRouter } from "expo-router";
-import { ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users, Mic } from "lucide-react-native";
+import { Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users, Mic, CreditCard } from "lucide-react-native";
 import { Ionicons } from '@expo/vector-icons';
 import ReceiveModal from "@/components/ReceiveModal";
 import SelinaVoiceModal from "@/components/SelinaVoiceModal";
+import MercuryoWidget from "@/components/MercuryoWidget";
+import SmartCryptoIcon from "@/components/SmartCryptoIcon";
+import NetworkSwitcher from "@/components/NetworkSwitcher";
+import { useNetwork } from "@/providers/NetworkProvider";
 import * as Clipboard from 'expo-clipboard';
 
 // Helper function to shorten address
@@ -32,11 +36,13 @@ const getWalletBalance = (wallet: any): number => {
 export default function WalletHome() {
   const insets = useSafeAreaInsets();
   const { wallet, refreshBalance } = useWallet();
+  const { network } = useNetwork();
   const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
   const [balanceVisible, setBalanceVisible] = React.useState(true);
   const [showReceive, setShowReceive] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
+  const [showMercuryo, setShowMercuryo] = useState(false);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -73,6 +79,12 @@ export default function WalletHome() {
   // Handle Receive button press
   const handleReceive = () => {
     setShowReceive(true);
+  };
+
+  // Handle Buy button press
+  const handleBuy = () => {
+    console.log('[Wallet] Buy button pressed - opening Mercuryo');
+    setShowMercuryo(true);
   };
 
   // Handle Split button press
@@ -177,6 +189,10 @@ export default function WalletHome() {
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleBuy}>
+          <CreditCard color={Colors.brand.white} size={20} />
+          <Text style={styles.actionText}>Buy</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={handleSend}>
           <Send color={Colors.brand.white} size={20} />
           <Text style={styles.actionText}>Send</Text>
@@ -191,10 +207,13 @@ export default function WalletHome() {
         </TouchableOpacity>
       </View>
 
+      {/* Network Switcher */}
+      <NetworkSwitcher />
+
       {/* Address Card */}
       <View style={styles.addressCard}>
         <View style={styles.addressContent}>
-          <Text style={styles.addressLabel}>Your TRON address</Text>
+          <Text style={styles.addressLabel}>Your {network.blockchain.toUpperCase()} address</Text>
           <Text style={styles.address}>{shortAddr(wallet.address)}</Text>
         </View>
         <TouchableOpacity onPress={copyAddress} style={styles.copyButton}>
@@ -215,12 +234,14 @@ export default function WalletHome() {
     </View>
   );
 
+  const renderTokenIcon = (symbol: string) => {
+    return <SmartCryptoIcon symbol={symbol} size={40} />;
+  };
+
   const renderToken = ({ item }: { item: typeof realTokens[0] }) => (
     <TouchableOpacity style={styles.tokenCard}>
       <View style={styles.tokenLeft}>
-        <View style={styles.tokenIconContainer}>
-          <Text style={styles.tokenIconText}>{item.iconValue.slice(0, 3)}</Text>
-        </View>
+        {renderTokenIcon(item.symbol)}
         <View>
           <Text style={styles.tokenName}>{item.name}</Text>
           <View style={styles.tokenPrice}>
@@ -270,17 +291,26 @@ export default function WalletHome() {
       />
       
       {/* Receive Modal */}
-      <ReceiveModal 
-        visible={showReceive} 
+      <ReceiveModal
+        visible={showReceive}
         onClose={() => setShowReceive(false)}
       />
 
       {/* Selina Voice Assistant Modal */}
-      <SelinaVoiceModal 
-        visible={showVoiceAssistant} 
+      <SelinaVoiceModal
+        visible={showVoiceAssistant}
         onClose={() => setShowVoiceAssistant(false)}
         currentBalance={getWalletBalance(wallet)}
         walletAddress={wallet.address}
+      />
+
+      {/* Mercuryo Buy Crypto Widget */}
+      <MercuryoWidget
+        visible={showMercuryo}
+        onClose={() => setShowMercuryo(false)}
+        walletAddress={wallet.address}
+        currency="TRX"
+        network="TRON"
       />
     </View>
   );
@@ -464,6 +494,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700" as const,
     color: Colors.brand.cherryRed,
+  },
+  tronLogoOuter: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tronLogo: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.brand.cherryRed,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tronLogoText: {
+    fontSize: 16,
+    fontWeight: "900" as const,
+    color: Colors.brand.white,
+    marginTop: 2,
   },
   tokenName: {
     fontSize: 16,

@@ -11,21 +11,23 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
 import { useWallet } from '@/providers/WalletProvider';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { wallet } = useWallet();
 
   const settingsOptions = [
     {
       id: 'security',
       title: 'Security & Privacy',
-      subtitle: 'Face ID, private keys, backup',
+      subtitle: 'Face ID, PIN, auto-lock, backup',
       icon: 'shield-checkmark-outline',
-      onPress: () => Alert.alert('Security', 'Security settings coming soon!'),
+      onPress: () => router.push('/(tabs)/(wallet)/security'),
     },
     {
       id: 'voice',
