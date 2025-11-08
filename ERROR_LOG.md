@@ -53,11 +53,22 @@ CompileC .../ReanimatedRuntime.o .../ReanimatedRuntime.cpp normal arm64 c++
    - Result: ✅ Passed dependency phase, hit lockfile issue
 
 **Final Solution**:
+1. Pin `react-native-reanimated` to `3.15.1` in `package.json`.
+2. Add a `patch-package` fix (`patches/react-native-reanimated+3.15.1.patch`) that only includes
+   `reacthermes/HermesExecutorFactory.h` when `HERMES_ENABLE_DEBUGGER` is enabled. This prevents the
+   Hermes debugger headers from pulling in the missing `folly/coro/Coroutine.h` on Expo SDK 54 release builds.
+
 ```json
 // package.json
 {
   "dependencies": {
-    "react-native-reanimated": "3.15.1"  // Changed from ~3.16.0
+    "react-native-reanimated": "3.15.1"
+  },
+  "scripts": {
+    "postinstall": "patch-package"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
   }
 }
 ```

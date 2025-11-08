@@ -66,7 +66,9 @@ All notable changes to HeySalad Wallet are documented in this file.
   - Attempted Solutions:
     - Added `useFrameworks: "static"` (didn't work)
     - Updated to react-native-reanimated 3.16.7 (still failed)
-  - Final Solution: Downgraded to react-native-reanimated 3.15.1 (stable version)
+  - Final Solution: Downgraded to react-native-reanimated 3.15.1 (stable version) and patched
+    `ReanimatedHermesRuntime.cpp` to skip `reacthermes` debugger headers when Hermes debugging is
+    disabled, eliminating the missing Folly coroutine include.
   - Updated `bun.lock` to sync dependencies
   - File: `package.json:72`
 
