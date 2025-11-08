@@ -138,20 +138,61 @@ npx -y @modelcontextprotocol/server-postgres postgresql://localhost/heysalad
 
 ### Setup MCP Servers
 
-1. **Install MCP CLI**:
+MCP servers are standalone executables that can be used with Claude Desktop, IDEs, or custom applications.
+
+#### Option 1: Use with Claude Desktop
+
+1. **Open Claude Desktop Configuration**:
 ```bash
-npm install -g @modelcontextprotocol/cli
+# macOS
+code ~/Library/Application\ Support/Claude/claude_desktop_config.json
+
+# Windows
+code %APPDATA%\Claude\claude_desktop_config.json
 ```
 
-2. **Start MCP Servers**:
-```bash
-mcp start --config mcp-config.json
+2. **Add MCP Server Configuration**:
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/chilumbam/heysalad-wallet"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token"
+      }
+    }
+  }
+}
 ```
 
-3. **Configure Environment Variables**:
+3. **Restart Claude Desktop** to activate the servers
+
+#### Option 2: Use Servers Directly
+
+Each server can be run independently:
+
+```bash
+# Filesystem server
+npx -y @modelcontextprotocol/server-filesystem /Users/chilumbam/heysalad-wallet
+
+# GitHub server (requires GITHUB_TOKEN env var)
+export GITHUB_PERSONAL_ACCESS_TOKEN="your_token"
+npx -y @modelcontextprotocol/server-github
+
+# Git server
+npx -y @modelcontextprotocol/server-git --repository /Users/chilumbam/heysalad-wallet
+```
+
+#### Configure Environment Variables
+
 ```bash
 # .env.local (DO NOT COMMIT)
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxxxxxxxxxxx
 BRAVE_API_KEY=BSAxxxxxxxxxxx
 ```
 
