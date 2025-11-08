@@ -1,0 +1,98 @@
+# OpenAI Codex Configuration for HeySalad Wallet
+
+project:
+  name: "HeySalad Wallet"
+  description: "AI-powered voice cryptocurrency wallet with biometric security"
+  language: "TypeScript"
+  frameworks:
+    - "React Native"
+    - "Expo SDK 54"
+    - "TRON Blockchain"
+
+ai_assistant:
+  model: "gpt-4-turbo"
+  temperature: 0.7
+  max_tokens: 4000
+
+  capabilities:
+    - code_generation
+    - code_review
+    - bug_fixing
+    - documentation
+    - test_generation
+    - refactoring
+
+  context_files:
+    - "README.md"
+    - "CHANGELOG.md"
+    - "ERROR_LOG.md"
+    - "package.json"
+    - "app.json"
+    - "eas.json"
+    - "tsconfig.json"
+
+code_style:
+  typescript:
+    strict: true
+    noImplicitAny: true
+    strictNullChecks: true
+
+  react:
+    functional_components: true
+    hooks: true
+    typescript: true
+
+  naming:
+    components: "PascalCase"
+    functions: "camelCase"
+    constants: "UPPER_SNAKE_CASE"
+    files: "kebab-case"
+
+security:
+  sensitive_patterns:
+    - "private[_-]?key"
+    - "api[_-]?key"
+    - "secret"
+    - "password"
+    - "token"
+    - "credential"
+
+  never_commit:
+    - ".env"
+    - "*.pem"
+    - "*.key"
+    - "*credentials*"
+
+testing:
+  frameworks:
+    - "Jest"
+    - "React Native Testing Library"
+
+  coverage_threshold:
+    statements: 80
+    branches: 75
+    functions: 80
+    lines: 80
+
+documentation:
+  inline_comments: true
+  jsdoc: true
+  readme_updates: true
+  changelog_updates: true
+
+workflows:
+  pre_commit:
+    - "TypeScript type check"
+    - "ESLint"
+    - "Prettier"
+    - "Security scan"
+
+  pre_push:
+    - "Run tests"
+    - "Build check"
+
+  on_pr:
+    - "CI tests"
+    - "Code review"
+    - "Security scan"
+    - "Build iOS/Android"
