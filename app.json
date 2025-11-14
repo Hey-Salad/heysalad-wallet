@@ -67,8 +67,6 @@
           }
         }
       ],
-
-
       "expo-router",
       [
         "expo-av",
@@ -107,9 +105,10 @@
     "newArchEnabled": false,
     "extra": {
       "eas": {
-        "projectId": "909b7fa0-fae8-4b5a-a474-b0dedfb5c73a"
-      }
+        "projectId": "8d0e29da-752d-4d69-9eb7-ade6a4a07fe5"
+      },
+      "router": {}
     },
-    "owner": "heysalad"
+    "owner": "bereit"
   }
 }
