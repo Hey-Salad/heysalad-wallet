@@ -7,15 +7,24 @@
     "base": {
       "node": "20.18.0",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "RCT_NEW_ARCH_ENABLED": "0"
       }
     },
     "development": {
       "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "RCT_NEW_ARCH_ENABLED": "0"
+      },
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "buildConfiguration": "Debug"
+      },
+      "cache": {
+        "disabled": false
       }
     },
     "preview": {
