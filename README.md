@@ -207,6 +207,20 @@ We welcome contributions to improve this prototype:
 - Update documentation for new features
 - Maintain security best practices
 
+### **Get Help with Claude AI**
+
+You can tag [@claude](https://github.com/apps/claude-for-github) directly in GitHub issues and pull requests for AI assistance!
+
+**Installation:**
+1. Visit [github.com/apps/claude-for-github](https://github.com/apps/claude-for-github)
+2. Click "Install" and select this repository
+3. Tag `@claude` in any issue or PR comment to get AI-powered help
+
+**Usage Examples:**
+- `@claude can you review this PR?`
+- `@claude help me debug this error`
+- `@claude what's the best way to implement [feature]?`
+
 ---
 
 ## 📚 **Documentation**

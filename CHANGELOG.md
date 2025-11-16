@@ -2,6 +2,81 @@
 
 All notable changes to HeySalad Wallet are documented in this file.
 
+## [1.0.11] - 2025-11-16
+
+### ✨ Added
+- **Circle Programmable Wallets SDK Integration**
+  - Added `@circle-fin/user-controlled-wallets` SDK (v9.3.0)
+  - Integrated passkey-based wallet creation
+  - Added Circle network configuration
+  - Files: `package.json`, `services/CircleSDKService.ts`
+
+- **Node.js Polyfills for React Native**
+  - Fixed module resolution errors for Circle SDK
+  - Added browser-compatible polyfills for Node.js core modules
+  - Configured Metro bundler with proper module mapping
+  - Files: `metro.config.js`, `polyfills.js`, `app/_layout.tsx`
+  - Packages: `crypto-browserify`, `stream-browserify`, `buffer`, `process`, `util`, and more
+
+- **Enhanced .env.example Documentation**
+  - Added comprehensive Circle SDK configuration
+  - Added Arc Network (Circle's L1) configuration
+  - Documented all environment variables with clear examples
+  - Added security warnings for sensitive keys
+  - File: `.env.example`
+
+### 🔐 Security
+- **Removed Sensitive Information from Repository**
+  - Moved files with API keys and secrets to `.archive/docs/`
+  - Updated `.gitignore` to prevent future sensitive data commits
+  - Cleaned up documentation files containing credentials
+  - Archived: `SENDGRID_SETUP_COMPLETE.md`, `HACKATHON_FINAL_SETUP.md`, etc.
+
+- **Improved .gitignore Protection**
+  - Added patterns for sensitive documentation files
+  - Added protection for private keys and credentials
+  - Enhanced environment file protection
+  - File: `.gitignore`
+
+### 📦 Dependencies
+- Added `@circle-fin/user-controlled-wallets` ^9.3.0
+- Added `crypto-browserify` ^3.12.1
+- Added `stream-browserify` ^3.0.0
+- Added `buffer` ^6.0.3
+- Added `process` ^0.11.10
+- Added `util` ^0.12.5
+- Added `path-browserify` ^1.0.1
+- Added `stream-http` ^3.2.0
+- Added `https-browserify` ^1.0.0
+- Added `os-browserify` ^0.3.0
+- Added `browserify-zlib` ^0.2.0
+- Added `vm-browserify` ^1.1.2
+- Added `react-native-fs` ^2.20.0
+- Added `text-encoding` ^0.7.0
+- Added `readable-stream` ^4.7.0
+- Added `events` ^3.3.0
+- Added `assert` ^2.1.0
+
+### 🔧 Changed
+- **Metro Configuration**
+  - Added extraNodeModules mapping for Node.js core modules
+  - Configured proper module resolution for Circle SDK
+  - Enabled experimental import support
+  - File: `metro.config.js` (new)
+
+### 📝 Documentation
+- Updated `README.md` to reflect current project state
+- Enhanced `.env.example` with detailed configuration guide
+- Added inline documentation for all polyfill packages
+
+### 🐛 Fixed
+- **Critical: "Unable to resolve module util" Error**
+  - Problem: Circle SDK required Node.js built-in modules unavailable in React Native
+  - Solution: Added comprehensive polyfill setup with metro.config.js
+  - Files: `metro.config.js`, `polyfills.js`, `app/_layout.tsx`
+
+---
+
 ## [1.0.10] - 2025-11-07
 
 ### 🎉 Milestone

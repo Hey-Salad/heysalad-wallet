@@ -34,6 +34,24 @@ yarn-error.*
 .env.*
 !.env.example
 
+# Sensitive documentation (archived locally)
+**/SENDGRID_SETUP*.md
+**/HACKATHON_FINAL_SETUP.md
+**/PASSKEY_INTEGRATION_GUIDE.md
+**/PASSKEY_ACTION_PLAN.md
+**/CIRCLE_SDK_SETUP.md
+**/SETUP_INSTRUCTIONS.md
+**/EMAIL_AUTH_SETUP.md
+**/AUTH_ARCHITECTURE.md
+**/MULTI_AUTH_2FA_SETUP.md
+
+# Private keys and credentials
+**/*private*key*.txt
+**/*secret*.txt
+**/*credentials*.json
+**/*config.json
+!**/example*.json
+
 # typescript
 *.tsbuildinfo
 .vercel
