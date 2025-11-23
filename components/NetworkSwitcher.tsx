@@ -48,8 +48,10 @@ export default function NetworkSwitcher() {
     }
   };
 
-  // Get all TRON networks for now (will expand with multi-chain)
-  const tronNetworks = getNetworksByBlockchain('tron');
+  // Get networks by blockchain - only mainnet for production
+  const tronNetworks = getNetworksByBlockchain('tron').filter(n => n.environment === 'mainnet');
+  const baseNetworks = getNetworksByBlockchain('base').filter(n => n.environment === 'mainnet');
+  const polygonNetworks = getNetworksByBlockchain('polygon').filter(n => n.environment === 'mainnet');
 
   return (
     <>
@@ -130,6 +132,64 @@ export default function NetworkSwitcher() {
               );
             })}
 
+            {/* Base Networks */}
+            <Text style={styles.sectionTitle}>BASE</Text>
+            {baseNetworks.map((network) => {
+              const isSelected = network.id === currentNetworkId;
+              const isTest = isTestnet(network.id);
+
+              return (
+                <TouchableOpacity
+                  key={network.id}
+                  style={[styles.networkItem, isSelected && styles.networkItemSelected]}
+                  onPress={() => handleNetworkSelect(network.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.networkLeft}>
+                    <View style={[styles.networkDot, isTest && styles.networkDotTestnet]} />
+                    <View>
+                      <Text style={styles.networkName}>{network.name}</Text>
+                      <Text style={styles.networkMeta}>
+                        {network.nativeToken.symbol} • {isTest ? 'Testnet' : 'Mainnet'}
+                      </Text>
+                    </View>
+                  </View>
+                  {isSelected && (
+                    <Check color={Colors.brand.cherryRed} size={20} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Polygon Networks */}
+            <Text style={styles.sectionTitle}>POLYGON</Text>
+            {polygonNetworks.map((network) => {
+              const isSelected = network.id === currentNetworkId;
+              const isTest = isTestnet(network.id);
+
+              return (
+                <TouchableOpacity
+                  key={network.id}
+                  style={[styles.networkItem, isSelected && styles.networkItemSelected]}
+                  onPress={() => handleNetworkSelect(network.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.networkLeft}>
+                    <View style={[styles.networkDot, isTest && styles.networkDotTestnet]} />
+                    <View>
+                      <Text style={styles.networkName}>{network.name}</Text>
+                      <Text style={styles.networkMeta}>
+                        {network.nativeToken.symbol} • {isTest ? 'Testnet' : 'Mainnet'}
+                      </Text>
+                    </View>
+                  </View>
+                  {isSelected && (
+                    <Check color={Colors.brand.cherryRed} size={20} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
             {/* Coming Soon: Other Blockchains */}
             <Text style={[styles.sectionTitle, styles.sectionTitleDisabled]}>Coming Soon</Text>
 
@@ -139,7 +199,7 @@ export default function NetworkSwitcher() {
             </View>
 
             <View style={styles.comingSoon}>
-              <Text style={styles.comingSoonText}>Polkadot</Text>
+              <Text style={styles.comingSoonText}>Ethereum</Text>
               <Text style={styles.comingSoonBadge}>Soon</Text>
             </View>
 
@@ -151,7 +211,7 @@ export default function NetworkSwitcher() {
             {/* Info */}
             <View style={styles.info}>
               <Text style={styles.infoText}>
-                More blockchains coming soon! Vote for your favorite on our Discord.
+                More blockchains coming soon! 🚀
               </Text>
             </View>
           </ScrollView>

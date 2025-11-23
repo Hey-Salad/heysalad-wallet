@@ -43,19 +43,6 @@ export default function SmartCryptoIcon({ symbol, size = 32, style }: SmartCrypt
     setHasError(true);
   };
 
-  // Special handling for TRON
-  if (symbol === 'TRX' || symbol === 'TRON') {
-    return (
-      <View style={[styles.container, { width: size, height: size }, style]}>
-        <View style={[styles.tronLogoOuter, { width: size, height: size }]}>
-          <View style={[styles.tronLogo, { width: size - 4, height: size - 4, borderRadius: (size - 4) / 2 }]}>
-            <Text style={[styles.tronLogoText, { fontSize: size * 0.5 }]}>▲</Text>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
   // Show fallback if error or loading
   if (hasError || !iconUrl) {
     return (
@@ -141,19 +128,5 @@ const styles = StyleSheet.create({
   fallbackText: {
     fontWeight: '900' as const,
     color: Colors.brand.ink,
-  },
-  tronLogoOuter: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tronLogo: {
-    backgroundColor: Colors.brand.cherryRed,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tronLogoText: {
-    fontWeight: '900' as const,
-    color: Colors.brand.white,
-    marginTop: 2,
   },
 });

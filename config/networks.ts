@@ -156,10 +156,86 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       hasStaking: false,
     },
   },
+
+  // Base Networks (Coinbase L2)
+  'base-mainnet': {
+    id: 'base-mainnet',
+    name: 'Base',
+    blockchain: 'base',
+    environment: 'mainnet',
+    rpcUrl: 'https://mainnet.base.org',
+    explorerUrl: 'https://basescan.org',
+    nativeToken: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: true,
+      hasStaking: false,
+    },
+  },
+  'base-sepolia': {
+    id: 'base-sepolia',
+    name: 'Base Sepolia',
+    blockchain: 'base',
+    environment: 'testnet',
+    rpcUrl: 'https://sepolia.base.org',
+    explorerUrl: 'https://sepolia.basescan.org',
+    nativeToken: {
+      symbol: 'ETH',
+      name: 'Ethereum',
+      decimals: 18,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: true,
+      hasStaking: false,
+    },
+  },
+
+  // Polygon Networks
+  'polygon-mainnet': {
+    id: 'polygon-mainnet',
+    name: 'Polygon',
+    blockchain: 'polygon',
+    environment: 'mainnet',
+    rpcUrl: 'https://polygon-rpc.com',
+    explorerUrl: 'https://polygonscan.com',
+    nativeToken: {
+      symbol: 'MATIC',
+      name: 'Polygon',
+      decimals: 18,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: true,
+      hasStaking: true,
+    },
+  },
+  'polygon-amoy': {
+    id: 'polygon-amoy',
+    name: 'Polygon Amoy',
+    blockchain: 'polygon',
+    environment: 'testnet',
+    rpcUrl: 'https://rpc-amoy.polygon.technology',
+    explorerUrl: 'https://amoy.polygonscan.com',
+    nativeToken: {
+      symbol: 'MATIC',
+      name: 'Polygon',
+      decimals: 18,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: true,
+      hasStaking: false,
+    },
+  },
 };
 
 // Default network for new users
-export const DEFAULT_NETWORK_ID = 'tron-testnet';
+export const DEFAULT_NETWORK_ID = 'tron-mainnet';
 
 // Get network by ID
 export function getNetwork(networkId: string): NetworkConfig {

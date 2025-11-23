@@ -125,27 +125,21 @@ export async function cacheIconUrl(symbol: string, url: string): Promise<void> {
 
 /**
  * Get crypto icon URL with smart fallback strategy
- * 1. Check bundled icons (offline)
- * 2. Check cache
- * 3. Fetch from CoinGecko API
+ * 1. Check cache
+ * 2. Fetch from CoinGecko API (primary - most accurate icons)
+ * 3. Check bundled icons (offline fallback)
  * 4. Fallback to Trust Wallet CDN
  */
 export async function getCryptoIconUrl(symbol: string, size: number = 32): Promise<string> {
   const symbolLower = symbol.toLowerCase();
 
-  // 1. Check if bundled (offline support for major coins)
-  if (hasBundledIcon(symbol)) {
-    // Return a flag that tells the component to use bundled icon
-    return `bundled:${symbolLower}:${size}`;
-  }
-
-  // 2. Check cache
+  // 1. Check cache first (fast)
   const cached = await getCachedIconUrl(symbol);
   if (cached) {
     return cached;
   }
 
-  // 3. Try CoinGecko API
+  // 2. Try CoinGecko API (primary source for accurate icons)
   const coinGeckoImages = await fetchCoinGeckoIcon(symbol);
   if (coinGeckoImages) {
     const iconUrl = size <= 32 ? coinGeckoImages.thumb :
@@ -156,6 +150,12 @@ export async function getCryptoIconUrl(symbol: string, size: number = 32): Promi
     return iconUrl;
   }
 
+  // 3. Check if bundled (offline support for major coins)
+  if (hasBundledIcon(symbol)) {
+    // Return a flag that tells the component to use bundled icon
+    return `bundled:${symbolLower}:${size}`;
+  }
+
   // 4. Fallback to Trust Wallet CDN
   const trustWalletUrl = getTrustWalletIconUrl(symbol);
   return trustWalletUrl;
@@ -163,21 +163,27 @@ export async function getCryptoIconUrl(symbol: string, size: number = 32): Promi
 
 /**
  * Get Trust Wallet CDN URL (fallback)
+ * Using raw.githubusercontent.com as CDN for Trust Wallet assets
  */
 function getTrustWalletIconUrl(symbol: string): string {
   const blockchainMap: Record<string, string> = {
     'BTC': 'bitcoin',
     'ETH': 'ethereum',
-    'BNB': 'binance',
+    'BNB': 'smartchain',
     'SOL': 'solana',
     'TRX': 'tron',
     'DOT': 'polkadot',
     'AVAX': 'avalanchec',
     'MATIC': 'polygon',
+    'USDT': 'ethereum',
+    'USDC': 'ethereum',
+    'ADA': 'cardano',
+    'XRP': 'ripple',
   };
 
   const blockchain = blockchainMap[symbol.toUpperCase()] || 'ethereum';
-  return `https://assets.trustwallet.com/blockchains/${blockchain}/info/logo.png`;
+  // Use the raw GitHub CDN for Trust Wallet assets (more reliable)
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${blockchain}/info/logo.png`;
 }
 
 /**

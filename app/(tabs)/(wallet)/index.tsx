@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useWallet } from "@/providers/WalletProvider";
 import { useRouter } from "expo-router";
-import { Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users, Mic, CreditCard } from "lucide-react-native";
+import { Copy, Eye, EyeOff, TrendingUp, TrendingDown, Send, ArrowDown, Users, Mic, CreditCard, ArrowUpDown } from "lucide-react-native";
 import { Ionicons } from '@expo/vector-icons';
 import ReceiveModal from "@/components/ReceiveModal";
 import SelinaVoiceModal from "@/components/SelinaVoiceModal";
@@ -113,25 +113,50 @@ export default function WalletHome() {
 
   const totalChange = 0.44; // Example: +0.44%
 
-  // Create token list from real wallet data
+  // Multi-chain token list - shows all supported chains
   const realTokens = useMemo(() => {
     const tokens = [];
-    
-    // Add TRX if balance > 0
+
+    // TRX (TRON)
     const trxBalance = getWalletBalance(wallet);
-    if (trxBalance > 0) {
-      tokens.push({
-        id: "tron",
-        symbol: "TRX",
-        name: "TRON",
-        balance: trxBalance,
-        balanceGBP: trxBalance * 0.12,
-        price: 0.12,
-        change24h: 0.42,
-        iconValue: "TRX"
-      });
-    }
-    
+    tokens.push({
+      id: "tron",
+      symbol: "TRX",
+      name: "Tron",
+      balance: trxBalance,
+      balanceGBP: trxBalance * 0.12,
+      price: 0.12,
+      change24h: 0.42,
+      iconValue: "TRX",
+      blockchain: "tron"
+    });
+
+    // ETH (Base)
+    tokens.push({
+      id: "base-eth",
+      symbol: "ETH",
+      name: "Ethereum",
+      balance: 0,
+      balanceGBP: 0,
+      price: 2450.00,
+      change24h: 1.24,
+      iconValue: "ETH",
+      blockchain: "base"
+    });
+
+    // MATIC (Polygon)
+    tokens.push({
+      id: "polygon-matic",
+      symbol: "MATIC",
+      name: "Polygon",
+      balance: 0,
+      balanceGBP: 0,
+      price: 0.68,
+      change24h: -0.82,
+      iconValue: "MATIC",
+      blockchain: "polygon"
+    });
+
     return tokens;
   }, [wallet]);
 
@@ -146,100 +171,81 @@ export default function WalletHome() {
         />
       </View>
 
-      {/* Balance Card */}
-      <View style={styles.balanceCard}>
-        <View style={styles.balanceHeader}>
-          <View style={styles.balanceContent}>
-            <Text style={styles.balanceLabel}>BALANCE</Text>
-            <View style={styles.balanceRow}>
-              <Text style={styles.balanceValue}>
-                {balanceVisible ? `£${totalBalanceGBP.toFixed(2)}` : "••••••"}
-              </Text>
-              <TouchableOpacity onPress={() => setBalanceVisible(!balanceVisible)}>
-                {balanceVisible ? 
-                  <Eye color="#00000088" size={20} /> : 
-                  <EyeOff color="#00000088" size={20} />
-                }
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.tronBalance}>
-              {balanceVisible ? `${getWalletBalance(wallet).toFixed(2)} TRX` : "••• TRX"}
-            </Text>
-            <View style={styles.changeRow}>
-              {totalChange >= 0 ? 
-                <TrendingUp color="#4ade80" size={16} /> : 
-                <TrendingDown color="#ef4444" size={16} />
-              }
-              <Text style={[styles.changeText, { color: totalChange >= 0 ? "#4ade80" : "#ef4444" }]}>
-                £{Math.abs(totalChange * totalBalanceGBP / 100).toFixed(2)} {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(2)}%
-              </Text>
-            </View>
-          </View>
-          
-          {/* Voice Assistant Button */}
-          <TouchableOpacity 
-            style={styles.voiceButton} 
-            onPress={handleVoiceAssistant}
-            activeOpacity={0.7}
-          >
-            <Mic color={Colors.brand.white} size={24} />
+      {/* Simple Balance Display */}
+      <View style={styles.balanceSection}>
+        <View style={styles.balanceRow}>
+          <Text style={styles.balanceValue}>
+            {balanceVisible ? `£${totalBalanceGBP.toFixed(2)}` : "••••••"}
+          </Text>
+          <TouchableOpacity onPress={() => setBalanceVisible(!balanceVisible)}>
+            {balanceVisible ?
+              <Eye color="#00000088" size={22} /> :
+              <EyeOff color="#00000088" size={22} />
+            }
           </TouchableOpacity>
         </View>
+        <Text style={styles.networksText}>3 networks</Text>
       </View>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Tangem Style */}
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.actionButton} onPress={handleBuy}>
-          <CreditCard color={Colors.brand.white} size={20} />
+          <View style={styles.actionIcon}>
+            <CreditCard color={Colors.brand.cherryRed} size={20} />
+          </View>
           <Text style={styles.actionText}>Buy</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Swap', 'Swap feature coming soon!')}>
+          <View style={styles.actionIcon}>
+            <ArrowUpDown color={Colors.brand.cherryRed} size={20} />
+          </View>
+          <Text style={styles.actionText}>Swap</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={handleSend}>
-          <Send color={Colors.brand.white} size={20} />
+          <View style={styles.actionIcon}>
+            <Send color={Colors.brand.cherryRed} size={20} />
+          </View>
           <Text style={styles.actionText}>Send</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={handleReceive}>
-          <ArrowDown color={Colors.brand.white} size={20} />
-          <Text style={styles.actionText}>Receive</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleSplit}>
-          <Users color={Colors.brand.white} size={20} />
-          <Text style={styles.actionText}>Split</Text>
+          <View style={styles.actionIcon}>
+            <ArrowDown color={Colors.brand.cherryRed} size={20} />
+          </View>
+          <Text style={styles.actionText} numberOfLines={1}>Receive</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Network Switcher */}
-      <NetworkSwitcher />
-
-      {/* Address Card */}
-      <View style={styles.addressCard}>
-        <View style={styles.addressContent}>
-          <Text style={styles.addressLabel}>Your {network.blockchain.toUpperCase()} address</Text>
-          <Text style={styles.address}>{shortAddr(wallet.address)}</Text>
-        </View>
-        <TouchableOpacity onPress={copyAddress} style={styles.copyButton}>
-          <Copy color={Colors.brand.cherryRed} size={16} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSettings} style={styles.copyButton}>
-          <Ionicons name="settings-outline" size={16} color={Colors.brand.cherryRed} />
+      {/* Tokens Header - Tangem Style */}
+      <View style={styles.tokensHeader}>
+        <Text style={styles.tokensTitle}>Assets</Text>
+        <TouchableOpacity onPress={handleSettings} style={styles.settingsButton}>
+          <Ionicons name="settings-outline" size={20} color={Colors.brand.inkMuted} />
         </TouchableOpacity>
       </View>
-
-      {/* Tokens Header - Only show if we have tokens */}
-      {realTokens.length > 0 && (
-        <View style={styles.tokensHeader}>
-          <Text style={styles.tokensTitle}>Tokens</Text>
-          <Text style={styles.tokensValue}>£{totalBalanceGBP.toFixed(2)}</Text>
-        </View>
-      )}
     </View>
   );
 
   const renderTokenIcon = (symbol: string) => {
-    return <SmartCryptoIcon symbol={symbol} size={40} />;
+    return <SmartCryptoIcon symbol={symbol} size={28} />;
+  };
+
+  const handleTokenPress = (item: typeof realTokens[0]) => {
+    router.push({
+      pathname: '/(tabs)/(wallet)/asset-detail',
+      params: {
+        symbol: item.symbol,
+        name: item.name,
+        balance: item.balance.toString(),
+        balanceGBP: item.balanceGBP.toString(),
+        price: item.price.toString(),
+        change24h: item.change24h.toString(),
+        blockchain: item.blockchain,
+      },
+    });
   };
 
   const renderToken = ({ item }: { item: typeof realTokens[0] }) => (
-    <TouchableOpacity style={styles.tokenCard}>
+    <TouchableOpacity style={styles.tokenCard} onPress={() => handleTokenPress(item)}>
       <View style={styles.tokenLeft}>
         {renderTokenIcon(item.symbol)}
         <View>
@@ -334,67 +340,26 @@ const styles = StyleSheet.create({
     height: 40,
     width: 200,
   },
-  balanceCard: {
-    backgroundColor: Colors.brand.white,
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: "#00000015",
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  balanceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  balanceContent: {
-    flex: 1,
-  },
-  balanceLabel: {
-    color: Colors.brand.inkMuted,
-    fontSize: 12,
-    fontWeight: "700" as const,
-    letterSpacing: 1,
+  balanceSection: {
+    alignItems: "center",
+    paddingVertical: 20,
   },
   balanceRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginTop: 8,
   },
   balanceValue: {
     color: Colors.brand.ink,
-    fontSize: 36,
-    fontWeight: "900" as const,
+    fontSize: 48,
+    fontWeight: "700" as const,
+    letterSpacing: -1,
   },
-  tronBalance: {
+  networksText: {
     color: Colors.brand.inkMuted,
-    fontSize: 16,
-    marginTop: 4,
-  },
-  changeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    fontSize: 15,
     marginTop: 8,
-  },
-  changeText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-  },
-  voiceButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.brand.cherryRed,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.brand.cherryRed,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    fontWeight: "500" as const,
   },
   actionButtons: {
     flexDirection: "row",
@@ -402,18 +367,26 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: Colors.brand.cherryRed,
+    backgroundColor: Colors.brand.white,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
     gap: 8,
-    shadowColor: "#00000010",
+    shadowColor: "#00000008",
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 2 },
   },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFF3F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   actionText: {
-    color: Colors.brand.white,
+    color: Colors.brand.ink,
     fontSize: 12,
     fontWeight: "600" as const,
   },
@@ -451,16 +424,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 8,
   },
   tokensTitle: {
-    fontSize: 20,
-    fontWeight: "900" as const,
+    fontSize: 22,
+    fontWeight: "700" as const,
     color: Colors.brand.ink,
   },
-  tokensValue: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: Colors.brand.inkMuted,
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.brand.white,
+    alignItems: "center",
+    justifyContent: "center",
   },
   tokenCard: {
     flexDirection: "row",

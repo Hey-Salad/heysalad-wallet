@@ -9,6 +9,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Linking from "expo-linking";
 import React, { useCallback, useEffect } from "react";
+import { View, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Now using V2 via compatibility shim in WalletProvider.tsx
@@ -24,125 +25,122 @@ import OnboardingFlow from "@/components/OnboardingFlow";
 
 const queryClient = new QueryClient();
 
-// Component that checks authentication and wallet setup
+// Simplified component that just provides the navigation structure
+// Individual screens handle their own auth checks (like heysalad-cash)
 function AppNavigator() {
-  const { user, profile, loading: supabaseLoading } = useSupabase();
-  const { wallet, completeOnboarding } = useWallet();
-  const { isLocked } = useSecurity();
+  const { user, loading: supabaseLoading, supabase } = useSupabase();
   const router = useRouter();
-  const segments = useSegments();
 
-  // Create a unique key based on wallet state to force re-renders
-  const appKey = `${wallet.isSetup}-${wallet.onboarding.hasCompletedOnboarding}-${wallet.address}`;
-
-  console.log('[AppNavigator] Current state:', {
-    user: user?.id,
-    profile: profile?.username,
-    supabaseLoading,
-    needsSetup: wallet.needsSetup,
-    isSetup: wallet.isSetup,
-    onboardingComplete: wallet.onboarding.hasCompletedOnboarding,
-    address: wallet.address,
-    isLocked,
-    appKey
-  });
-
-  // Handle authentication routing
+  // Handle deep links for magic link authentication
   useEffect(() => {
-    if (supabaseLoading) return;
+    // Handle the initial URL if the app was opened via a deep link
+    const handleInitialUrl = async () => {
+      const url = await Linking.getInitialURL();
+      if (url) {
+        console.log('[DeepLink] Initial URL:', url);
+        await handleDeepLink(url);
+      }
+    };
 
-    const inAuthGroup = segments[0] === '(auth)' ||
-                       segments[0] === 'sign-in' ||
-                       segments[0] === 'sign-in-email' ||
-                       segments[0] === 'sign-in-phone' ||
-                       segments[0] === 'verify-otp' ||
-                       segments[0] === 'verify-email' ||
-                       segments[0] === 'verify-email-code' ||
-                       segments[0] === 'onboarding-profile';
+    // Handle deep links while the app is already open
+    const handleDeepLink = async (url: string) => {
+      console.log('[DeepLink] Handling URL:', url);
 
-    console.log('[AppNavigator] Auth routing check:', {
-      hasUser: !!user,
-      hasProfile: !!profile,
-      inAuthGroup,
-      currentSegment: segments[0]
+      // Check if this is a Supabase auth callback
+      if (url.includes('auth/callback')) {
+        try {
+          // Supabase sends tokens in the URL fragment (after #), not as query params
+          // Parse the fragment to extract tokens
+          const urlObj = new URL(url);
+          let access_token = urlObj.searchParams.get('access_token');
+          let refresh_token = urlObj.searchParams.get('refresh_token');
+
+          // If not in query params, check the hash/fragment
+          if (!access_token && urlObj.hash) {
+            const hashParams = new URLSearchParams(urlObj.hash.substring(1));
+            access_token = hashParams.get('access_token');
+            refresh_token = hashParams.get('refresh_token');
+          }
+
+          console.log('[DeepLink] Extracted tokens:', {
+            hasAccessToken: !!access_token,
+            hasRefreshToken: !!refresh_token
+          });
+
+          if (access_token && refresh_token) {
+            console.log('[DeepLink] Setting session from magic link');
+
+            // Set the session with the tokens from the URL
+            const { data, error } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+
+            if (error) {
+              console.error('[DeepLink] Error setting session:', error);
+              return;
+            }
+
+            console.log('[DeepLink] Session set successfully');
+
+            // Check if user has a profile
+            if (data.user) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select()
+                .eq('auth_user_id', data.user.id)
+                .single();
+
+              if (!profile) {
+                console.log('[DeepLink] No profile found, going to onboarding');
+                router.replace('/onboarding-profile');
+              } else {
+                console.log('[DeepLink] Profile exists, going to main app');
+                router.replace('/(tabs)/(wallet)' as any);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[DeepLink] Error handling magic link:', error);
+        }
+      }
+    };
+
+    // Set up listener for deep links
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
     });
 
-    if (!user && !inAuthGroup) {
-      // Not authenticated - go to sign in
-      console.log('[AppNavigator] No user, redirecting to sign-in');
-      router.replace('/sign-in');
-    } else if (user && !profile) {
-      // Authenticated but no profile - ALWAYS go to profile creation
-      // (even if currently on an auth screen)
-      console.log('[AppNavigator] User but no profile, redirecting to onboarding-profile');
-      router.replace('/onboarding-profile');
-    } else if (user && profile && inAuthGroup) {
-      // Authenticated with profile but still on auth screen - go to main app
-      console.log('[AppNavigator] User has profile but on auth screen, redirecting to wallet');
-      router.replace('/(tabs)/(wallet)');
-    }
-  }, [user, profile, supabaseLoading, segments]);
+    // Handle initial URL on mount
+    handleInitialUrl();
 
-  // Show loading while checking auth
+    // Cleanup
+    return () => {
+      subscription.remove();
+    };
+  }, [supabase, router]);
+
+  // Show loading while Supabase initializes
   if (supabaseLoading) {
-    return null; // Or a loading screen
-  }
-
-  // Not authenticated - show auth screens
-  if (!user) {
     return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="sign-in" />
-        <Stack.Screen name="sign-in-email" />
-        <Stack.Screen name="sign-in-phone" />
-        <Stack.Screen name="verify-otp" />
-        <Stack.Screen name="verify-email" />
-        <Stack.Screen name="verify-email-code" />
-      </Stack>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
+        <Text style={{ fontSize: 18, fontWeight: '600' }}>Loading...</Text>
+        <Text style={{ fontSize: 12, color: '#666', marginTop: 8 }}>Initializing...</Text>
+      </View>
     );
   }
 
-  // Authenticated but no profile - show profile creation
-  // Check explicitly for null/undefined since profile can be null from failed query
-  if (!profile || profile === null) {
-    console.log('[AppNavigator] Showing onboarding-profile (no profile found)');
-    console.log('[AppNavigator] Profile value:', profile);
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="onboarding-profile" />
-      </Stack>
-    );
-  }
-
-  // SIMPLIFIED: If you have a profile, show the main app
-  // We'll skip all the complex wallet setup checks for now
-  console.log('[AppNavigator] ✅ User has profile, showing main app');
-  console.log('[AppNavigator] Profile:', profile?.username);
-  console.log('[AppNavigator] Wallet address:', wallet.address || 'NONE');
-  
-  // Check if user needs to select wallet type (new onboarding flow)
-  if (!wallet.onboarding.hasSeenWalletTypeSelection && !wallet.address) {
-    console.log('[AppNavigator] User needs to select wallet type');
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="onboarding-wallet-type" />
-      </Stack>
-    );
-  }
-  
-  // Show lock screen if explicitly locked
-  if (isLocked && wallet.address) {
-    console.log('[AppNavigator] Wallet is locked, showing lock screen');
-    return <LockScreen />;
-  }
-
-  // Show main app - SIMPLIFIED, no more checks
-  console.log('[AppNavigator] 🎉 SHOWING MAIN APP 🎉');
+  // Provide all screens - each screen will handle its own auth checks
   return (
-    <Stack key={appKey} screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth screens */}
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="verify-otp" />
+      <Stack.Screen name="onboarding-profile" />
+
+      {/* Main app */}
+      <Stack.Screen name="(tabs)" />
       <Stack.Screen name="modal" options={{ presentation: "modal", title: "HeySalad®" }} />
-      <Stack.Screen name="onboarding-wallet-type" options={{ headerShown: false }} />
     </Stack>
   );
 }

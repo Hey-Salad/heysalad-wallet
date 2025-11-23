@@ -8,7 +8,8 @@ export type BlockchainNetwork =
   | 'polkadot'
   | 'avalanche'
   | 'ethereum'
-  | 'polygon';
+  | 'polygon'
+  | 'base';
 
 export type NetworkEnvironment = 'mainnet' | 'testnet' | 'devnet';
 

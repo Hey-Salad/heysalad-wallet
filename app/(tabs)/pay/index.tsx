@@ -7,8 +7,8 @@ import AudioPay from "@/components/AudioPay";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
 import { parseVoiceToIntent } from "@/features/voice/intent";
-import { Stack } from "expo-router";
-import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones } from "lucide-react-native";
+import { Stack, router } from "expo-router";
+import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones, Nfc, MonitorSmartphone } from "lucide-react-native";
 
 const { width, height } = Dimensions.get('window');
 
@@ -316,10 +316,32 @@ export default function PayScreen() {
 
   const renderMethodSelection = () => (
     <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>How would you like to pay?</Text>
+      <View style={styles.logoContainer}>
+        <Image
+          source={require("@/assets/images/HeySalad_black_logo.png")}
+          style={styles.payLogo}
+          resizeMode="contain"
+        />
+      </View>
       <Text style={styles.stepSubtitle}>Choose your preferred payment method</Text>
-      
+
       <View style={styles.methodGrid}>
+        <HSButton
+          title="NFC Card"
+          variant="primary"
+          leftIcon={<Nfc color={Colors.brand.white} size={20} />}
+          onPress={() => router.push('/pay/nfc-card')}
+          style={styles.methodCard}
+        />
+
+        <HSButton
+          title="Terminals"
+          variant="primary"
+          leftIcon={<MonitorSmartphone color={Colors.brand.white} size={20} />}
+          onPress={() => router.push('/pay/terminals')}
+          style={styles.methodCard}
+        />
+
         <HSButton
           title="Audio Pay"
           variant="primary"
@@ -330,7 +352,7 @@ export default function PayScreen() {
           }}
           style={{...styles.methodCard, ...styles.audioPayCard}}
         />
-        
+
         <HSButton
           title="Scan QR Code"
           variant="primary"
@@ -338,7 +360,7 @@ export default function PayScreen() {
           onPress={handleQrScan}
           style={styles.methodCard}
         />
-        
+
         <HSButton
           title="Manual Entry"
           variant="secondary"
@@ -640,6 +662,15 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     flex: 1,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 20,
+  },
+  payLogo: {
+    height: 40,
+    width: 200,
   },
   stepHeader: {
     flexDirection: "row",
