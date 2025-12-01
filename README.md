@@ -1,4 +1,4 @@
-# HeySalad® Wallet 🥗
+# HeySalad® Wallet
 
 ![HeySalad Banner](screenshots/U1.png)
 
