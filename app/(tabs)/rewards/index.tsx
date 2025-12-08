@@ -23,6 +23,12 @@ export default function RewardsScreen() {
         }}
       />
 
+      <Image
+        source={require("@/assets/images/HeySalad_black_logo.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
       <View style={styles.headerCard}>
         <Text style={styles.points}>{wallet.tokenBalance}</Text>
         <Text style={styles.pointsLabel}>SALAD tokens</Text>
@@ -60,6 +66,12 @@ export default function RewardsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.brand.surface, padding: 16 },
+  logo: {
+    width: 160,
+    height: 50,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
   headerCard: {
     backgroundColor: "#fff",
     borderRadius: 16,

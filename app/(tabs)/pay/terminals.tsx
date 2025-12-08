@@ -19,7 +19,6 @@ import { ArrowLeft, Bluetooth, RefreshCw, Check } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import HSButton from '@/components/HSButton';
 import { getTerminalBLEService, Terminal } from '@/services/TerminalBLEService';
-import * as Device from 'expo-device';
 
 export default function TerminalsScreen() {
   const [isScanning, setIsScanning] = useState(false);
@@ -44,16 +43,8 @@ export default function TerminalsScreen() {
 
   const initializeBLE = async () => {
     try {
-      // Check if device supports BLE
-      if (!Device.isDevice) {
-        Alert.alert(
-          'Not Supported',
-          'Bluetooth is not available on simulator. Please use a physical device.'
-        );
-        setBleSupported(false);
-        setIsInitializing(false);
-        return;
-      }
+      // Check if device supports BLE (simulator will have limited functionality)
+      // Note: BLE features require a physical device
 
       const initialized = await bleService.initialize();
 

@@ -9,17 +9,43 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Fingerprint } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useWallet } from '@/providers/WalletProvider';
+import { useCircleWallet } from '@/providers/CircleWalletProvider';
+import { useCloudflareAuth } from '@/providers/CloudflareAuthProvider';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { wallet } = useWallet();
+  const { wallet: passkeyWallet, isBiometricAvailable } = useCircleWallet();
+  const { user, signOut } = useCloudflareAuth();
+
+  const isPasskeyWallet = !!passkeyWallet;
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/sign-in');
+          },
+        },
+      ]
+    );
+  };
 
   const settingsOptions = [
     {
@@ -87,17 +113,33 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* HeySalad Logo */}
+        <Image
+          source={require("@/assets/images/HeySalad_black_logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
         {/* Wallet Info Card */}
         <View style={styles.walletCard}>
           <View style={styles.walletInfo}>
             <Text style={styles.walletTitle}>Current Wallet</Text>
             <Text style={styles.walletAddress}>
-              {wallet.address ? `${wallet.address.slice(0, 8)}...${wallet.address.slice(-8)}` : 'No address'}
+              {passkeyWallet?.address || wallet.address
+                ? `${(passkeyWallet?.address || wallet.address).slice(0, 8)}...${(passkeyWallet?.address || wallet.address).slice(-8)}`
+                : 'No address'}
             </Text>
             <View style={styles.statusRow}>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>TRON Nile Testnet</Text>
-              </View>
+              {isPasskeyWallet ? (
+                <View style={[styles.statusBadge, styles.passkeyBadge]}>
+                  <Fingerprint color="#8b5cf6" size={14} />
+                  <Text style={[styles.statusText, { color: '#8b5cf6' }]}>Biometric Wallet</Text>
+                </View>
+              ) : (
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>TRON Wallet</Text>
+                </View>
+              )}
               <View style={[styles.statusBadge, styles.securityBadge]}>
                 <Ionicons name="shield-checkmark" size={14} color="#16a34a" />
                 <Text style={[styles.statusText, { color: '#16a34a' }]}>Secured</Text>
@@ -112,6 +154,29 @@ export default function SettingsScreen() {
           <View style={styles.settingsList}>
             {settingsOptions.map(renderSettingItem)}
           </View>
+        </View>
+
+        {/* Account Section */}
+        <View style={styles.dangerSection}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          {user?.email && (
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountEmail}>{user.email}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleSignOut}
+          >
+            <View style={[styles.settingIcon, { backgroundColor: '#fef3c7' }]}>
+              <Ionicons name="log-out-outline" size={24} color="#d97706" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Sign Out</Text>
+              <Text style={styles.settingSubtitle}>Sign out of your account</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.brand.inkMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Danger Zone */}
@@ -154,6 +219,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  logo: {
+    width: 160,
+    height: 50,
+    alignSelf: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
   walletCard: {
     backgroundColor: Colors.brand.white,
     borderRadius: 20,
@@ -195,6 +267,9 @@ const styles = StyleSheet.create({
   },
   securityBadge: {
     backgroundColor: '#dcfce7',
+  },
+  passkeyBadge: {
+    backgroundColor: '#f3e8ff',
   },
   statusText: {
     fontSize: 12,
@@ -259,5 +334,17 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     color: '#ef4444',
+  },
+  accountInfo: {
+    backgroundColor: Colors.brand.lightPeach,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  accountEmail: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.brand.ink,
+    textAlign: 'center',
   },
 });

@@ -5,123 +5,37 @@
 import '../polyfills';
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as Linking from "expo-linking";
+import Constants from "expo-constants";
 import React, { useCallback, useEffect } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Now using V2 via compatibility shim in WalletProvider.tsx
 import { WalletProvider, useWallet } from "@/providers/WalletProvider";
+import { CircleWalletProvider } from "@/providers/CircleWalletProvider";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { NetworkProvider } from "@/providers/NetworkProvider";
 import { SecurityProvider, useSecurity } from "@/providers/SecurityProvider";
-import { SupabaseProvider, useSupabase } from "@/providers/SupabaseProvider";
+import { CloudflareAuthProvider, useCloudflareAuth } from "@/providers/CloudflareAuthProvider";
 import LockScreen from "@/components/LockScreen";
 import WalletSetup from "@/components/WalletSetup";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import PaymentConfirmationModal from "@/components/PaymentConfirmationModal";
+import { usePaymentDeepLink } from "@/hooks/usePaymentDeepLink";
 
 const queryClient = new QueryClient();
 
 // Simplified component that just provides the navigation structure
-// Individual screens handle their own auth checks (like heysalad-cash)
+// Individual screens handle their own auth checks
 function AppNavigator() {
-  const { user, loading: supabaseLoading, supabase } = useSupabase();
-  const router = useRouter();
+  const { user, loading: authLoading } = useCloudflareAuth();
+  const { paymentParams, showPaymentModal, clearPayment, handlePaymentComplete } = usePaymentDeepLink();
 
-  // Handle deep links for magic link authentication
-  useEffect(() => {
-    // Handle the initial URL if the app was opened via a deep link
-    const handleInitialUrl = async () => {
-      const url = await Linking.getInitialURL();
-      if (url) {
-        console.log('[DeepLink] Initial URL:', url);
-        await handleDeepLink(url);
-      }
-    };
-
-    // Handle deep links while the app is already open
-    const handleDeepLink = async (url: string) => {
-      console.log('[DeepLink] Handling URL:', url);
-
-      // Check if this is a Supabase auth callback
-      if (url.includes('auth/callback')) {
-        try {
-          // Supabase sends tokens in the URL fragment (after #), not as query params
-          // Parse the fragment to extract tokens
-          const urlObj = new URL(url);
-          let access_token = urlObj.searchParams.get('access_token');
-          let refresh_token = urlObj.searchParams.get('refresh_token');
-
-          // If not in query params, check the hash/fragment
-          if (!access_token && urlObj.hash) {
-            const hashParams = new URLSearchParams(urlObj.hash.substring(1));
-            access_token = hashParams.get('access_token');
-            refresh_token = hashParams.get('refresh_token');
-          }
-
-          console.log('[DeepLink] Extracted tokens:', {
-            hasAccessToken: !!access_token,
-            hasRefreshToken: !!refresh_token
-          });
-
-          if (access_token && refresh_token) {
-            console.log('[DeepLink] Setting session from magic link');
-
-            // Set the session with the tokens from the URL
-            const { data, error } = await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
-
-            if (error) {
-              console.error('[DeepLink] Error setting session:', error);
-              return;
-            }
-
-            console.log('[DeepLink] Session set successfully');
-
-            // Check if user has a profile
-            if (data.user) {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select()
-                .eq('auth_user_id', data.user.id)
-                .single();
-
-              if (!profile) {
-                console.log('[DeepLink] No profile found, going to onboarding');
-                router.replace('/onboarding-profile');
-              } else {
-                console.log('[DeepLink] Profile exists, going to main app');
-                router.replace('/(tabs)/(wallet)' as any);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[DeepLink] Error handling magic link:', error);
-        }
-      }
-    };
-
-    // Set up listener for deep links
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      handleDeepLink(url);
-    });
-
-    // Handle initial URL on mount
-    handleInitialUrl();
-
-    // Cleanup
-    return () => {
-      subscription.remove();
-    };
-  }, [supabase, router]);
-
-  // Show loading while Supabase initializes
-  if (supabaseLoading) {
+  // Show loading while auth initializes
+  if (authLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
         <Text style={{ fontSize: 18, fontWeight: '600' }}>Loading...</Text>
@@ -132,21 +46,48 @@ function AppNavigator() {
 
   // Provide all screens - each screen will handle its own auth checks
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* Auth screens */}
-      <Stack.Screen name="sign-in" />
-      <Stack.Screen name="verify-otp" />
-      <Stack.Screen name="onboarding-profile" />
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Auth screens */}
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="onboarding-profile" />
+        <Stack.Screen name="onboarding-wallet" />
+        <Stack.Screen name="auth/callback" />
 
-      {/* Main app */}
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="modal" options={{ presentation: "modal", title: "HeySalad®" }} />
-    </Stack>
+        {/* Main app */}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="modal" options={{ presentation: "modal", title: "HeySalad®" }} />
+      </Stack>
+
+      {/* Payment Confirmation Modal - Requirements 6.4 */}
+      <PaymentConfirmationModal
+        visible={showPaymentModal}
+        onClose={clearPayment}
+        paymentParams={paymentParams}
+        onPaymentComplete={handlePaymentComplete}
+      />
+    </>
   );
 }
 
 export default function RootLayout() {
   useEffect(() => {
+    // Log version/build info on app startup to help identify correct bundle
+    const appVersion = Constants.expoConfig?.version ?? 'unknown';
+    const buildNumber = Platform.select({
+      ios: Constants.expoConfig?.ios?.buildNumber,
+      android: Constants.expoConfig?.android?.versionCode?.toString(),
+    }) ?? 'unknown';
+    const appName = Constants.expoConfig?.name ?? 'HeySalad Wallet';
+    const runtimeVersion = Constants.expoConfig?.runtimeVersion ?? 'unknown';
+    
+    console.log('='.repeat(50));
+    console.log(`[App] ${appName} v${appVersion} (build: ${buildNumber})`);
+    console.log(`[App] Runtime: ${runtimeVersion}`);
+    console.log(`[App] Platform: ${Platform.OS} ${Platform.Version}`);
+    console.log(`[App] Started at: ${new Date().toISOString()}`);
+    console.log('='.repeat(50));
+
     (async () => {
       try {
         await SplashScreen.preventAutoHideAsync();
@@ -177,21 +118,23 @@ export default function RootLayout() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <SupabaseProvider>
-          <AuthProvider>
-            <NetworkProvider>
-              <SecurityProvider>
-                <WalletProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
-                    <ErrorBoundary>
-                      <AppNavigator />
-                    </ErrorBoundary>
-                  </GestureHandlerRootView>
-                </WalletProvider>
-              </SecurityProvider>
-            </NetworkProvider>
-          </AuthProvider>
-        </SupabaseProvider>
+        <CloudflareAuthProvider>
+          <CircleWalletProvider>
+            <AuthProvider>
+              <NetworkProvider>
+                <SecurityProvider>
+                  <WalletProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onReady}>
+                      <ErrorBoundary>
+                        <AppNavigator />
+                      </ErrorBoundary>
+                    </GestureHandlerRootView>
+                  </WalletProvider>
+                </SecurityProvider>
+              </NetworkProvider>
+            </AuthProvider>
+          </CircleWalletProvider>
+        </CloudflareAuthProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );

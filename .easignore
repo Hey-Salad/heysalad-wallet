@@ -1,0 +1,31 @@
+# EAS Build ignore file
+# Specify files to exclude from EAS builds
+
+# Development
+.git/
+.github/
+node_modules/
+.expo/
+
+# Documentation (but keep necessary configs)
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+.DS_Store
+*.swp
+*.swo
+*~
+

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TextInput, FlatList, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TextInput, FlatList, ScrollView, TouchableOpacity, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import HSButton from "@/components/HSButton";
@@ -148,6 +148,11 @@ export default function SocialSplitScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.headerCard}>
+          <Image
+            source={require("@/assets/images/HeySalad_black_logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <TomatoMascot size={60} mood="speedy" animated />
           <Text style={styles.headerTitle}>Split & Cook</Text>
           <Text style={styles.headerSubtitle}>Split bills easily with friends</Text>
@@ -283,12 +288,17 @@ export default function SocialSplitScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#ffffff" 
+  container: {
+    flex: 1,
+    backgroundColor: "#ffffff"
   },
-  scrollContent: { 
-    paddingBottom: 40 
+  scrollContent: {
+    paddingBottom: 40
+  },
+  logo: {
+    width: 160,
+    height: 50,
+    marginBottom: 12,
   },
   headerCard: {
     alignItems: "center",

@@ -7,29 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E23948D3F797A3647A3CD1B /* libPods-HeySaladWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DC2BD128CCE6D6E0BD8D955A /* libPods-HeySaladWallet.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		23B20C6F824AF4059F33CFAA /* libPods-HeySaladWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D7282F746CF647508B6FFCD /* libPods-HeySaladWallet.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		A655B8C79FE67AEE625DCD03 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2011A669CB230CAFA0F476F3 /* ExpoModulesProvider.swift */; };
-		AA1A1CBA158B61806AC43F82 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F5CD828FDFB785C872BC9958 /* PrivacyInfo.xcprivacy */; };
+		55DE4DC6AD228F2BEE301ADE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0E03007B0D350FBA5F043AAE /* PrivacyInfo.xcprivacy */; };
+		8D94A5C15AF89E20557A22F7 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943DE9FDCA4F6BF8E85E7E4F /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0E03007B0D350FBA5F043AAE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = HeySaladWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* HeySaladWallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HeySaladWallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = HeySaladWallet/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HeySaladWallet/Info.plist; sourceTree = "<group>"; };
-		2011A669CB230CAFA0F476F3 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-HeySaladWallet/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		6D7282F746CF647508B6FFCD /* libPods-HeySaladWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HeySaladWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		7C1FAFDA54C8A79BC5EAE1DE /* Pods-HeySaladWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HeySaladWallet.release.xcconfig"; path = "Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet.release.xcconfig"; sourceTree = "<group>"; };
-		94D7AD169D2C19EA24174584 /* Pods-HeySaladWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HeySaladWallet.debug.xcconfig"; path = "Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet.debug.xcconfig"; sourceTree = "<group>"; };
+		943DE9FDCA4F6BF8E85E7E4F /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-HeySaladWallet/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		9CD304C6DF8655719B98E92B /* Pods-HeySaladWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HeySaladWallet.release.xcconfig"; path = "Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet.release.xcconfig"; sourceTree = "<group>"; };
+		A2BBF9F59A1AD8D698D2787B /* Pods-HeySaladWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HeySaladWallet.debug.xcconfig"; path = "Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = HeySaladWallet/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		DC2BD128CCE6D6E0BD8D955A /* libPods-HeySaladWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HeySaladWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HeySaladWallet/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* HeySaladWallet-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "HeySaladWallet-Bridging-Header.h"; path = "HeySaladWallet/HeySaladWallet-Bridging-Header.h"; sourceTree = "<group>"; };
-		F5CD828FDFB785C872BC9958 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = HeySaladWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,13 +37,21 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				23B20C6F824AF4059F33CFAA /* libPods-HeySaladWallet.a in Frameworks */,
+				0E23948D3F797A3647A3CD1B /* libPods-HeySaladWallet.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0A094B38B2740B4A3C46EA1B /* HeySaladWallet */ = {
+			isa = PBXGroup;
+			children = (
+				943DE9FDCA4F6BF8E85E7E4F /* ExpoModulesProvider.swift */,
+			);
+			name = HeySaladWallet;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* HeySaladWallet */ = {
 			isa = PBXGroup;
 			children = (
@@ -53,18 +61,36 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				F5CD828FDFB785C872BC9958 /* PrivacyInfo.xcprivacy */,
+				0E03007B0D350FBA5F043AAE /* PrivacyInfo.xcprivacy */,
 			);
 			name = HeySaladWallet;
+			sourceTree = "<group>";
+		};
+		23D613AC951BA6932928936A /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				A2BBF9F59A1AD8D698D2787B /* Pods-HeySaladWallet.debug.xcconfig */,
+				9CD304C6DF8655719B98E92B /* Pods-HeySaladWallet.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				6D7282F746CF647508B6FFCD /* libPods-HeySaladWallet.a */,
+				DC2BD128CCE6D6E0BD8D955A /* libPods-HeySaladWallet.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		572D804A89C9F0BBACF7CC54 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				0A094B38B2740B4A3C46EA1B /* HeySaladWallet */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -81,8 +107,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				C29F8430CAB1FE98B8AE3E06 /* Pods */,
-				D91396021C8EA0E0B0B848CB /* ExpoModulesProviders */,
+				23D613AC951BA6932928936A /* Pods */,
+				572D804A89C9F0BBACF7CC54 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -97,14 +123,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AA226EC982AF1DFC3A60568D /* HeySaladWallet */ = {
-			isa = PBXGroup;
-			children = (
-				2011A669CB230CAFA0F476F3 /* ExpoModulesProvider.swift */,
-			);
-			name = HeySaladWallet;
-			sourceTree = "<group>";
-		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -112,24 +130,6 @@
 			);
 			name = Supporting;
 			path = HeySaladWallet/Supporting;
-			sourceTree = "<group>";
-		};
-		C29F8430CAB1FE98B8AE3E06 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				94D7AD169D2C19EA24174584 /* Pods-HeySaladWallet.debug.xcconfig */,
-				7C1FAFDA54C8A79BC5EAE1DE /* Pods-HeySaladWallet.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
-		D91396021C8EA0E0B0B848CB /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				AA226EC982AF1DFC3A60568D /* HeySaladWallet */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HeySaladWallet" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				2FA1A9C856E38EA10FBA56A7 /* [Expo] Configure project */,
+				719ED34E6669CE639BA01200 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				1BF641FAF90AC93FCEB80A33 /* [CP] Embed Pods Frameworks */,
+				4AF42A6BC9F5BBD898FAF362 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				AA1A1CBA158B61806AC43F82 /* PrivacyInfo.xcprivacy in Resources */,
+				55DE4DC6AD228F2BEE301ADE /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,17 +242,21 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1BF641FAF90AC93FCEB80A33 /* [CP] Embed Pods Frameworks */ = {
+		4AF42A6BC9F5BBD898FAF362 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -260,7 +264,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		2FA1A9C856E38EA10FBA56A7 /* [Expo] Configure project */ = {
+		719ED34E6669CE639BA01200 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -293,37 +297,33 @@
 				"${PODS_ROOT}/Target Support Files/Pods-HeySaladWallet/Pods-HeySaladWallet-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/boost/boost_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-launcher/EXDevLauncher.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-menu/EXDevMenu.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/glog/glog_privacy.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoMediaLibrary_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCT-Folly_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/boost_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevLauncher.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevMenu.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/glog_privacy.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -338,7 +338,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				A655B8C79FE67AEE625DCD03 /* ExpoModulesProvider.swift in Sources */,
+				8D94A5C15AF89E20557A22F7 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,7 +347,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 94D7AD169D2C19EA24174584 /* Pods-HeySaladWallet.debug.xcconfig */;
+			baseConfigurationReference = A2BBF9F59A1AD8D698D2787B /* Pods-HeySaladWallet.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -371,7 +371,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.heysalad.wallet;
+				PRODUCT_BUNDLE_IDENTIFIER = app.saladhr.heysalad-wallet;
 				PRODUCT_NAME = HeySaladWallet;
 				SWIFT_OBJC_BRIDGING_HEADER = "HeySaladWallet/HeySaladWallet-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -383,7 +383,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7C1FAFDA54C8A79BC5EAE1DE /* Pods-HeySaladWallet.release.xcconfig */;
+			baseConfigurationReference = 9CD304C6DF8655719B98E92B /* Pods-HeySaladWallet.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -402,7 +402,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.heysalad.wallet;
+				PRODUCT_BUNDLE_IDENTIFIER = app.saladhr.heysalad-wallet;
 				PRODUCT_NAME = HeySaladWallet;
 				SWIFT_OBJC_BRIDGING_HEADER = "HeySaladWallet/HeySaladWallet-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -469,6 +469,7 @@
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -522,6 +523,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};

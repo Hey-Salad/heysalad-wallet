@@ -1,23 +1,30 @@
 // components/WalletSetup.tsx
-// Enhanced wallet setup with proper flow
+// Enhanced wallet setup with proper flow - supports both TRON and Circle passkey wallets
 
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, Alert, Image, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import HSButton from "@/components/HSButton";
 import Colors from "@/constants/colors";
 import { useWallet } from "@/providers/WalletProvider";
-import { Plus, Download, AlertCircle, CheckCircle } from "lucide-react-native";
+import { useCircleWallet } from "@/providers/CircleWalletProvider";
+import { useCloudflareAuth } from "@/providers/CloudflareAuthProvider";
+import { Plus, Download, AlertCircle, CheckCircle, Fingerprint, Wallet } from "lucide-react-native";
 
-type SetupStep = "welcome" | "method" | "create" | "import" | "backup" | "complete";
+type SetupStep = "welcome" | "method" | "passkey" | "create" | "import" | "backup" | "complete";
 
 const WalletSetup: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { createWallet, importWallet, setupWallet } = useWallet();
+  const { createPasskeyWallet } = useCircleWallet();
+  const { user } = useCloudflareAuth();
   const [step, setStep] = useState<SetupStep>("welcome");
   const [privateKey, setPrivateKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [newWallet, setNewWallet] = useState<{ address: string; privateKey: string } | null>(null);
+  const [passkeyWallet, setPasskeyWallet] = useState<{ address: string } | null>(null);
 
   const handleCreateWallet = async () => {
     setLoading(true);
@@ -54,13 +61,38 @@ const WalletSetup: React.FC = () => {
 
   const handleCompleteBackup = async () => {
     if (!newWallet) return;
-    
+
     try {
       await setupWallet(newWallet.address, newWallet.privateKey);
       setStep("complete");
     } catch (error) {
       console.error('Failed to setup wallet:', error);
       Alert.alert("Error", "Failed to setup wallet. Please try again.");
+    }
+  };
+
+  const handleCreatePasskey = async () => {
+    if (!user?.email && !user?.id) {
+      Alert.alert("Error", "User information missing. Please sign in first.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('[WalletSetup] Creating passkey wallet...');
+      // Use email as username, or fallback to user ID
+      const username = user.email || user.id;
+      const wallet = await createPasskeyWallet(username);
+      setPasskeyWallet(wallet);
+      setStep("complete");
+    } catch (error) {
+      console.error('[WalletSetup] Failed to create passkey wallet:', error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to create passkey wallet. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,22 +142,42 @@ const WalletSetup: React.FC = () => {
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Set Up Your Wallet</Text>
       <Text style={styles.stepSubtitle}>Choose how you'd like to get started</Text>
-      
+
       <View style={styles.methodContainer}>
-        <View style={styles.methodCard}>
-          <Plus color={Colors.brand.cherryRed} size={32} />
-          <Text style={styles.methodTitle}>Create New Wallet</Text>
+        {/* Circle Passkey Option (Recommended) */}
+        <View style={[styles.methodCard, styles.recommendedCard]}>
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedText}>RECOMMENDED</Text>
+          </View>
+          <Fingerprint color={Colors.brand.cherryRed} size={32} />
+          <Text style={styles.methodTitle}>Passkey Wallet</Text>
           <Text style={styles.methodDescription}>
-            Generate a new wallet with a fresh private key. Recommended for new users.
+            Secure smart contract wallet with Face ID/Touch ID. No private keys to manage.
           </Text>
           <HSButton
-            title="Create New"
-            onPress={() => setStep("create")}
+            title="Set up with Passkey"
+            onPress={() => setStep("passkey")}
             variant="primary"
             style={styles.methodButton}
           />
         </View>
-        
+
+        {/* TRON Local Wallet Option */}
+        <View style={styles.methodCard}>
+          <Wallet color={Colors.brand.cherryRed} size={32} />
+          <Text style={styles.methodTitle}>TRON Wallet</Text>
+          <Text style={styles.methodDescription}>
+            Generate a new TRON wallet. You control your private keys.
+          </Text>
+          <HSButton
+            title="Create TRON Wallet"
+            onPress={() => setStep("create")}
+            variant="secondary"
+            style={styles.methodButton}
+          />
+        </View>
+
+        {/* Import Option */}
         <View style={styles.methodCard}>
           <Download color={Colors.brand.cherryRed} size={32} />
           <Text style={styles.methodTitle}>Import Existing</Text>
@@ -139,6 +191,51 @@ const WalletSetup: React.FC = () => {
             style={styles.methodButton}
           />
         </View>
+      </View>
+    </View>
+  );
+
+  const renderPasskey = () => (
+    <View style={styles.stepContainer}>
+      <Image
+        source={require("@/assets/images/HeySalad_black_logo.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
+      <Text style={styles.stepTitle}>Create Passkey Wallet</Text>
+      <Text style={styles.stepSubtitle}>
+        Your wallet will be secured with Face ID or Touch ID
+      </Text>
+
+      <View style={styles.createContent}>
+        <View style={styles.securityNotice}>
+          <AlertCircle color={Colors.brand.cherryRed} size={24} />
+          <Text style={styles.securityText}>
+            Your passkey will be stored securely in your device's Secure Enclave. You'll use biometric authentication to sign transactions.
+          </Text>
+        </View>
+
+        <View style={styles.feature}>
+          <CheckCircle color={Colors.brand.green} size={20} />
+          <Text style={styles.featureText}>No private keys to back up</Text>
+        </View>
+        <View style={styles.feature}>
+          <CheckCircle color={Colors.brand.green} size={20} />
+          <Text style={styles.featureText}>Sync across your devices</Text>
+        </View>
+        <View style={styles.feature}>
+          <CheckCircle color={Colors.brand.green} size={20} />
+          <Text style={styles.featureText}>Gasless transactions</Text>
+        </View>
+
+        <HSButton
+          title={loading ? "Creating Wallet..." : "Create Passkey Wallet"}
+          onPress={handleCreatePasskey}
+          loading={loading}
+          variant="primary"
+          style={styles.primaryButton}
+        />
       </View>
     </View>
   );
@@ -244,11 +341,25 @@ const WalletSetup: React.FC = () => {
   const renderComplete = () => (
     <View style={styles.stepContainer}>
       <View style={styles.completeContent}>
+        <Image
+          source={require("@/assets/images/HeySalad_black_logo.png")}
+          style={styles.logoLarge}
+          resizeMode="contain"
+        />
         <CheckCircle color={Colors.brand.green} size={64} />
         <Text style={styles.completeTitle}>Wallet Setup Complete!</Text>
         <Text style={styles.completeSubtitle}>
           Your HeySalad wallet is ready to use. You can now send, receive, and split payments with friends.
         </Text>
+
+        <HSButton
+          title="Get Started"
+          onPress={() => {
+            router.replace({ pathname: '/(tabs)/(wallet)' });
+          }}
+          variant="primary"
+          style={styles.primaryButton}
+        />
       </View>
     </View>
   );
@@ -257,6 +368,7 @@ const WalletSetup: React.FC = () => {
     switch (step) {
       case "welcome": return renderWelcome();
       case "method": return renderMethod();
+      case "passkey": return renderPasskey();
       case "create": return renderCreate();
       case "import": return renderImport();
       case "backup": return renderBackup();
@@ -298,6 +410,18 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     marginBottom: 24,
+  },
+  logo: {
+    width: 180,
+    height: 60,
+    alignSelf: "center",
+    marginBottom: 32,
+  },
+  logoLarge: {
+    width: 220,
+    height: 80,
+    alignSelf: "center",
+    marginBottom: 40,
   },
   welcomeTitle: {
     fontSize: 28,
@@ -353,6 +477,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.brand.border,
     gap: 16,
+  },
+  recommendedCard: {
+    borderColor: Colors.brand.cherryRed,
+    borderWidth: 2,
+    backgroundColor: Colors.brand.lightPeach,
+  },
+  recommendedBadge: {
+    position: "absolute" as const,
+    top: -12,
+    backgroundColor: Colors.brand.cherryRed,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  recommendedText: {
+    color: Colors.brand.white,
+    fontSize: 10,
+    fontWeight: "900" as const,
+    letterSpacing: 1,
   },
   methodTitle: {
     fontSize: 18,

@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.heysalad.wallet",
+      "bundleIdentifier": "app.saladhr.heysalad-wallet",
       "deploymentTarget": "15.1",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -27,7 +27,34 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "HeySalad® Wallet uses the camera to scan QR codes.",
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "supabase.co": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": false
+            },
+            "heysalad-o.workers.dev": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false
+            },
+            "heysalad.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false
+            },
+            "mercuryo.io": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false
+            },
+            "circle.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false
+            },
+            "trongrid.io": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false
+            }
+          }
         }
       },
       "config": {
@@ -92,7 +119,6 @@
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
       ],
-      "expo-barcode-scanner",
       "expo-font",
       "expo-web-browser",
       [
@@ -115,7 +141,7 @@
     "experiments": {
       "typedRoutes": true
     },
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": "8d0e29da-752d-4d69-9eb7-ade6a4a07fe5"

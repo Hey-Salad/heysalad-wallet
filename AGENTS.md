@@ -123,24 +123,27 @@ heysalad-wallet/
 ```tsx
 <TRPCProvider>
   <QueryClientProvider>
-    <AuthProvider>
-      <NetworkProvider>
-        <SecurityProvider>
-          <WalletProvider>  // Uses WalletProviderV2
-            {children}
-          </WalletProvider>
-        </SecurityProvider>
-      </NetworkProvider>
-    </AuthProvider>
+    <SupabaseProvider>          // NEW: Auth & user data
+      <AuthProvider>
+        <NetworkProvider>
+          <SecurityProvider>
+            <WalletProvider>    // Uses WalletProviderV2
+              {children}
+            </WalletProvider>
+          </SecurityProvider>
+        </NetworkProvider>
+      </AuthProvider>
+    </SupabaseProvider>
   </QueryClientProvider>
 </TRPCProvider>
 ```
 
 **Provider Responsibilities:**
+- **SupabaseProvider**: User authentication, session management, profile data (Supabase Auth)
+- **AuthProvider**: Biometric authentication state
 - **NetworkProvider**: Network selection (tron-testnet, tron-mainnet), blockchain service routing
 - **SecurityProvider**: Auto-lock timer, PIN management, biometric auth, lock screen state
 - **WalletProviderV2**: Wallet address, balance, refresh logic, transaction history
-- **AuthProvider**: User authentication state
 
 ### Navigation Structure
 
@@ -466,6 +469,36 @@ Colors.brand = {
 
 ## Recent Changes & Features
 
+### November 27, 2025 - Authentication & Error Fixes
+
+**1. Magic Link Authentication Fix** ✅ CRITICAL
+- **Problem**: User redirected to sign-in after clicking magic link
+- **Root Cause**: Duplicate deep link handlers competing for URL
+- **Solution**: Removed duplicate handler from `_layout.tsx`, consolidated in `auth/callback.tsx`
+- **Files Modified**:
+  - [app/_layout.tsx](app/_layout.tsx) - Removed lines 10, 34-121 (duplicate deep link handling)
+  - [app/auth/callback.tsx](app/auth/callback.tsx) - Added fallback URL listener
+- **Impact**: Magic links now work correctly, users authenticate successfully
+
+**2. TTS Initialization Error Fix** ✅
+- **Problem**: `setDefaultRate()` BOOL conversion error on app startup
+- **Root Cause**: TTS methods called before proper initialization
+- **Solution**: Wrapped each TTS method in defensive try-catch
+- **Files**: [components/SelinaVoiceModal.tsx](components/SelinaVoiceModal.tsx#L32-41)
+- **Impact**: No more TTS errors in console, graceful fallback
+
+**3. SupabaseProvider Timeout Optimization** ✅
+- **Problem**: 20-second timeout blocking UI, triggering multiple times
+- **Solution**: Reduced to 5s, added performance logging and network error detection
+- **Files**: [providers/SupabaseProvider.tsx](providers/SupabaseProvider.tsx)
+- **Impact**: Faster UI response, better diagnostics
+
+**4. expo-device Module Error** ⏳ PENDING
+- **Problem**: Native module not found for BLE terminal scanning
+- **Solution**: Requires native rebuild (see maintenance commands)
+- **Files Affected**: [app/(tabs)/pay/terminals.tsx](app/(tabs)/pay/terminals.tsx#L22)
+- **Impact**: BLE scanning unavailable until rebuild
+
 ### November 2024 - Major Updates
 
 **1. Apple App Store Compliance** ✅
@@ -510,17 +543,24 @@ Colors.brand = {
 
 ## Known Issues & Workarounds
 
-### 1. Balance Shows 0 on Mainnet (Expected)
+### 1. expo-device Native Module Error ⏳
+**Issue**: `Cannot find native module 'ExpoDevice'`
+**Cause**: Development build needs rebuild after dependency changes
+**Solution**: Run native rebuild commands (see Maintenance Commands section)
+**Impact**: BLE terminal scanning unavailable until rebuild
+**Status**: PENDING USER ACTION
+
+### 2. Balance Shows 0 on Mainnet (Expected)
 **Issue**: When switching to mainnet, balance shows 0
 **Cause**: User doesn't have funds on mainnet
 **Solution**: This is correct behavior. Test on testnet or use "Buy" to add funds.
 
-### 2. Bundled Icons Require Known Paths
+### 3. Bundled Icons Require Known Paths
 **Issue**: Can't dynamically import SVGs in React Native
 **Workaround**: Manual mapping in SmartCryptoIcon.tsx:68-83
 **Impact**: New bundled icons require code changes
 
-### 3. WebView Not Loading on Android
+### 4. WebView Not Loading on Android
 **Issue**: Mercuryo widget may not load on Android
 **Cause**: Missing permissions or WebView version
 **Solution**: Ensure `react-native-webview` is properly configured in app.json
@@ -583,10 +623,17 @@ eas build --platform android --profile development
 Structured logging throughout codebase:
 ```
 [Component] Action description
+[SupabaseProvider] getSession completed in 245ms
+[AuthCallback] Processing magic link callback
+[AuthCallback] Session set successfully
 [WalletProviderV2] Refreshing balance on network: tron-mainnet
 [Security] Auto-locking wallet due to inactivity
+[Selina] TTS language setting failed, using default
 [Mercuryo] Navigation: https://exchange.mercuryo.io/...
 ```
+
+**Deprecated Log Prefixes (removed as of 2025-11-27):**
+- ❌ `[DeepLink]` - Duplicate handler removed from _layout.tsx
 
 ### Common Debug Commands
 
@@ -756,8 +803,118 @@ const [showMercuryo, setShowMercuryo] = useState(false);
 />
 ```
 
+## Authentication & Deep Linking
+
+### Supabase Authentication
+**Backend**: Supabase Auth (shared instance: `yfujqbciditibrehrzf.supabase.co`)
+**Provider**: [providers/SupabaseProvider.tsx](providers/SupabaseProvider.tsx)
+
+**Supported Methods:**
+- Email magic links (primary)
+- Phone OTP via SMS
+- OAuth (future: Google, GitHub)
+
+**Auth Flow:**
+1. User enters email on [app/sign-in.tsx](app/sign-in.tsx)
+2. Supabase sends magic link email
+3. User clicks link → Deep link opens app
+4. [app/auth/callback.tsx](app/auth/callback.tsx) handles authentication
+5. Check for profile → Route to onboarding or main app
+
+### Deep Link Configuration
+**URL Scheme**: `heysalad://`
+**Magic Link Callback**: `heysalad://auth/callback#access_token=...`
+
+**Platform Configuration:**
+- **iOS**: [ios/HeySaladWallet/Info.plist](ios/HeySaladWallet/Info.plist) - CFBundleURLSchemes
+- **Android**: [android/app/src/main/AndroidManifest.xml](android/app/src/main/AndroidManifest.xml) - intent-filter
+- **Expo**: [app.json](app.json) - `scheme: "heysalad"`
+
+**Important**: As of 2025-11-27, deep link handling is consolidated in `/auth/callback` route only. The duplicate handler in `_layout.tsx` has been removed to prevent race conditions.
+
+### Profiles Table Schema
+
+The `profiles` table stores user profile information linked to Supabase Auth users.
+
+**Database**: Supabase PostgreSQL
+**Table**: `profiles`
+
+**Schema:**
+```sql
+CREATE TABLE profiles (
+  auth_user_id UUID PRIMARY KEY REFERENCES auth.users(id),
+  username TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Column Details:**
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `auth_user_id` | UUID | PRIMARY KEY, REFERENCES auth.users(id) | Links to Supabase Auth user |
+| `username` | TEXT | UNIQUE, NOT NULL | User's chosen display name |
+| `name` | TEXT | NOT NULL | User's full name (defaults to username) |
+| `email` | TEXT | - | Email address (from email auth) |
+| `phone` | TEXT | - | Phone number (from phone auth) |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Profile creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**TypeScript Interface:**
+```typescript
+interface Profile {
+  auth_user_id: string;
+  username: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+**RLS Policies:**
+Row Level Security is enabled on the `profiles` table with the following policies:
+
+1. **Select Policy**: Users can read their own profile
+   - `auth.uid() = auth_user_id`
+
+2. **Insert Policy**: Users can create their own profile
+   - `auth.uid() = auth_user_id`
+
+3. **Update Policy**: Users can update their own profile
+   - `auth.uid() = auth_user_id`
+
+**Profile Creation (app/onboarding-profile.tsx):**
+When creating a profile, ALL NOT NULL fields must be provided:
+```typescript
+const profileData = {
+  auth_user_id: user.id,        // Required - from Supabase Auth
+  username: username.trim(),     // Required - user input
+  name: username.trim(),         // Required - defaults to username
+  email: user.email,             // Optional - from email auth
+  phone: user.phone,             // Optional - from phone auth
+};
+```
+
+**Common Errors:**
+- `23502` (not_null_violation): Missing required field (usually `name`)
+- `23505` (unique_violation): Username already taken
+
+### Related Systems
+**HeySalad Auth Portal**
+- **Location**: `/Users/chilumbam/heysalad-auth`
+- **Deployment**: Cloudflare Pages (`auth.heysalad.app`)
+- **Backend**: Same Supabase instance as mobile app
+- **Purpose**: Web-based authentication portal
+- **Note**: NOT a custom auth system with SendGrid - uses Supabase
+
 ---
 
-**Last Updated**: November 2024
-**Version**: 1.0.0
-**Status**: Ready for TestFlight submission (pending Mercuryo Widget ID)
+**Last Updated**: November 27, 2025
+**Version**: 1.1.0
+**Status**: Authentication fixes complete, ready for testing

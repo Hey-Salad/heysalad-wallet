@@ -2,38 +2,50 @@ import { Tabs, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import Colors from "@/constants/colors";
-import { Wallet, DollarSign, Users, Gift } from "lucide-react-native";
-import { useSupabase } from "@/providers/SupabaseProvider";
+import { Wallet, DollarSign, Users, Gift, CreditCard, Bot } from "lucide-react-native";
+import { useCloudflareAuth } from "@/providers/CloudflareAuthProvider";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const PROFILE_KEY = 'heysalad_profile';
 
 export default function TabLayout() {
-  const { user, profile, loading } = useSupabase();
+  const { user, loading } = useCloudflareAuth();
   const router = useRouter();
   const [hasChecked, setHasChecked] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
 
-  // Check authentication ONCE (like heysalad-cash dashboard layout)
+  // Check authentication ONCE
   useEffect(() => {
     if (loading || hasChecked) return;
 
-    console.log('[TabLayout] Checking auth...', { user: !!user, profile: !!profile });
+    const checkAuth = async () => {
+      console.log('[TabLayout] Checking auth...', { user: !!user });
 
-    if (!user) {
-      console.log('[TabLayout] No user, redirecting to sign-in');
-      router.replace('/sign-in');
-      return;
-    }
+      if (!user) {
+        console.log('[TabLayout] No user, redirecting to sign-in');
+        router.replace('/sign-in');
+        return;
+      }
 
-    if (!profile) {
-      console.log('[TabLayout] No profile, redirecting to onboarding');
-      router.replace('/onboarding-profile');
-      return;
-    }
+      // Check for profile in AsyncStorage
+      const profileJson = await AsyncStorage.getItem(PROFILE_KEY);
+      if (!profileJson) {
+        console.log('[TabLayout] No profile, redirecting to onboarding');
+        router.replace('/onboarding-profile');
+        return;
+      }
 
-    console.log('[TabLayout] ✅ User authenticated:', user.id, 'Profile:', profile.username);
-    setHasChecked(true);
-  }, [user, profile, loading, hasChecked, router]);
+      const profile = JSON.parse(profileJson);
+      console.log('[TabLayout] ✅ User authenticated:', user.id, 'Profile:', profile.username);
+      setHasProfile(true);
+      setHasChecked(true);
+    };
+
+    checkAuth();
+  }, [user, loading, hasChecked, router]);
 
   // Show loading only while initial check
-  if (loading || (!hasChecked && (!user || !profile))) {
+  if (loading || (!hasChecked && !user)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.brand.white }}>
         <ActivityIndicator size="large" color={Colors.brand.ink} />
@@ -59,10 +71,23 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="card"
+        options={{
+          title: "Card",
+          tabBarIcon: ({ color }) => <CreditCard color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="pay"
         options={{
-          title: "Payments",
-          tabBarIcon: ({ color }) => <DollarSign color={color} />,
+          href: null, // Hide from tab bar - card replaces it
+        }}
+      />
+      <Tabs.Screen
+        name="agent"
+        options={{
+          title: "Agent",
+          tabBarIcon: ({ color }) => <Bot color={color} />,
         }}
       />
       <Tabs.Screen
@@ -75,8 +100,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="rewards"
         options={{
-          title: "Rewards",
-          tabBarIcon: ({ color }) => <Gift color={color} />,
+          href: null, // Hide from tab bar - agent replaces it
         }}
       />
     </Tabs>

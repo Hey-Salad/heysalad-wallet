@@ -1,7 +1,11 @@
 // providers/SupabaseProvider.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import 'react-native-url-polyfill/auto'; // MUST be imported before @supabase/supabase-js
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
+import { classifyNetworkError, NetworkError } from '@/utils/networkError';
+import { withTimeout, withRetry, DEFAULT_RETRY_CONFIG, RetryConfig } from '@/utils/retry';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
@@ -34,8 +38,11 @@ interface SupabaseContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  lastError: NetworkError | null;
+  consecutiveTimeouts: number;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  clearError: () => void;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -45,66 +52,141 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState<NetworkError | null>(null);
+  const [consecutiveTimeouts, setConsecutiveTimeouts] = useState(0);
+  
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
 
-  // Fetch user profile from database with timeout
-  const fetchProfile = async (userId: string) => {
+  /**
+   * Clears the last error state
+   */
+  const clearError = useCallback(() => {
+    if (isMounted.current) {
+      setLastError(null);
+    }
+  }, []);
+
+  /**
+   * Fetch user profile from database with timeout and retry
+   * **Validates: Requirements 2.1, 2.2, 2.3, 2.5**
+   */
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
       console.log('[SupabaseProvider] Fetching profile for user:', userId);
+      const startTime = Date.now();
 
-      // Query profile directly (no timeout - let Supabase handle it)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('auth_user_id', userId)
-        .single();
+      // Use shorter timeout for profile fetch (5s) - it's a simple query
+      const profileRetryConfig: RetryConfig = {
+        ...DEFAULT_RETRY_CONFIG,
+        timeout: 5000, // 5 seconds instead of 15
+        maxRetries: 1, // Only 1 retry for profile fetch
+      };
 
-      if (error) {
-        // If profile doesn't exist (PGRST116), that's expected for new users
-        if (error.code === 'PGRST116') {
-          console.log('[SupabaseProvider] No profile found - user needs to create one');
-        } else {
-          // Log detailed error info to help debug
-          console.error('[SupabaseProvider] Error fetching profile:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
+      const result = await withRetry(
+        async () => {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('auth_user_id', userId)
+            .single();
+
+          if (error) {
+            // If profile doesn't exist (PGRST116), that's expected for new users
+            if (error.code === 'PGRST116') {
+              console.log('[SupabaseProvider] No profile found - user needs to create one');
+              return null;
+            }
+            throw error;
+          }
+
+          return data as Profile;
+        },
+        profileRetryConfig,
+        (attempt, error) => {
+          console.log(`[SupabaseProvider] Profile fetch retry ${attempt}: ${error.type}`);
+          if (error.type === 'timeout' && isMounted.current) {
+            setConsecutiveTimeouts(prev => prev + 1);
+          }
+        }
+      );
+
+      const duration = Date.now() - startTime;
+      console.log(`[SupabaseProvider] Profile fetched in ${duration}ms:`, result?.username || 'null');
+      
+      // Reset consecutive timeouts on success
+      if (isMounted.current) {
+        setConsecutiveTimeouts(0);
+        setLastError(null);
+      }
+      
+      return result;
+    } catch (error) {
+      const networkError = error as NetworkError;
+      console.error('[SupabaseProvider] Error fetching profile:', {
+        type: networkError.type,
+        message: networkError.message,
+      });
+      
+      if (isMounted.current) {
+        setLastError(networkError);
+        
+        // Track consecutive timeouts
+        if (networkError.type === 'timeout') {
+          setConsecutiveTimeouts(prev => {
+            const newCount = prev + 1;
+            if (newCount >= 2) {
+              console.warn('[SupabaseProvider] Multiple consecutive timeouts detected. Please check your network connection.');
+            }
+            return newCount;
           });
         }
-        return null;
       }
-
-      console.log('[SupabaseProvider] Profile fetched successfully:', data?.username);
-      return data as Profile;
-    } catch (error: any) {
-      console.error('[SupabaseProvider] Exception fetching profile:', error?.message || error);
+      
       return null;
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      if (isMounted.current) {
+        setProfile(profileData);
+      }
     }
-  };
+  }, [user, fetchProfile]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     console.log('[SupabaseProvider] Signing out');
     await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-  };
+    if (isMounted.current) {
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setLastError(null);
+      setConsecutiveTimeouts(0);
+    }
+  }, []);
 
   useEffect(() => {
     console.log('[SupabaseProvider] useEffect starting...');
+    isMounted.current = true;
 
-    // Safety timeout - if loading takes more than 20 seconds, force it to complete
+    // Safety timeout - if loading takes more than 15 seconds, force it to complete
+    // **Validates: Requirements 2.2, 2.4**
     const safetyTimeout = setTimeout(() => {
-      console.error('[SupabaseProvider] ⚠️ Safety timeout triggered! Forcing loading to false.');
-      setLoading(false);
-    }, 20000);
+      console.error('[SupabaseProvider] ⚠️ Safety timeout (15s) triggered! Forcing loading to false.');
+      console.error('[SupabaseProvider] This may indicate network issues or Supabase configuration problems.');
+      if (isMounted.current) {
+        setLoading(false);
+        setLastError({
+          type: 'timeout',
+          message: 'Request timed out. Please try again.',
+          retryable: true,
+        });
+        setConsecutiveTimeouts(prev => prev + 1);
+      }
+    }, 15000);
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -117,15 +199,21 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (isMounted.current) {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
 
         if (session?.user) {
           const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          if (isMounted.current) {
+            setProfile(profileData);
+          }
           console.log('[SupabaseProvider] Profile updated after auth change:', profileData?.username || 'null');
         } else {
-          setProfile(null);
+          if (isMounted.current) {
+            setProfile(null);
+          }
           console.log('[SupabaseProvider] Profile cleared (no user)');
         }
       }
@@ -135,28 +223,49 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     const initSession = async () => {
       try {
         console.log('[SupabaseProvider] Calling getSession...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const getSessionStart = Date.now();
+
+        // Use withTimeout for getSession
+        const { data: { session }, error } = await withTimeout(
+          supabase.auth.getSession(),
+          DEFAULT_RETRY_CONFIG.timeout
+        );
+
+        const getSessionDuration = Date.now() - getSessionStart;
+        console.log(`[SupabaseProvider] getSession completed in ${getSessionDuration}ms`);
 
         if (error) {
           console.error('[SupabaseProvider] Error getting session:', error);
+          const networkError = classifyNetworkError(error);
+          
+          if (isMounted.current) {
+            setLastError(networkError);
+          }
+
           clearTimeout(safetyTimeout);
-          setLoading(false);
+          if (isMounted.current) {
+            setLoading(false);
+          }
           return;
         }
 
         // Clear timeout immediately after getSession succeeds
-        // Don't wait for profile fetch to complete
         clearTimeout(safetyTimeout);
         console.log('[SupabaseProvider] Initial session:', session?.user?.id || 'none');
 
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false); // Set loading false before fetching profile
+        if (isMounted.current) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          setConsecutiveTimeouts(0); // Reset on successful session
+        }
 
         // Fetch profile in background (don't block on it)
         if (session?.user) {
           fetchProfile(session.user.id).then((profileData) => {
-            setProfile(profileData);
+            if (isMounted.current) {
+              setProfile(profileData);
+            }
             console.log('[SupabaseProvider] Initial profile set:', profileData?.username || 'null');
           });
         }
@@ -164,19 +273,77 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         console.log('[SupabaseProvider] Loading complete');
       } catch (error) {
         console.error('[SupabaseProvider] Exception in initSession:', error);
+        const networkError = classifyNetworkError(error);
+        
+        if (isMounted.current) {
+          setLastError(networkError);
+          
+          if (networkError.type === 'timeout') {
+            setConsecutiveTimeouts(prev => prev + 1);
+          }
+        }
+        
         clearTimeout(safetyTimeout);
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     };
 
     initSession();
 
+    // Handle deep links for magic link authentication
+    const handleDeepLink = async (event: { url: string }) => {
+      console.log('[SupabaseProvider] Deep link received:', event.url);
+      
+      const url = event.url;
+      const hashIndex = url.indexOf('#');
+      
+      if (hashIndex !== -1) {
+        const fragment = url.substring(hashIndex + 1);
+        const params = new URLSearchParams(fragment);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          console.log('[SupabaseProvider] Setting session from deep link');
+          try {
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (error) {
+              console.error('[SupabaseProvider] Error setting session from deep link:', error);
+            } else {
+              console.log('[SupabaseProvider] Session set successfully from deep link');
+            }
+          } catch (e) {
+            console.error('[SupabaseProvider] Exception setting session:', e);
+          }
+        }
+      }
+    };
+
+    // Listen for deep links
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check initial URL (app opened from deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('[SupabaseProvider] Initial URL found:', url);
+        handleDeepLink({ url });
+      }
+    });
+
     // Cleanup function
     return () => {
+      isMounted.current = false;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
+      linkingSubscription.remove();
     };
-  }, []);
+  }, [fetchProfile]);
 
   const value = {
     supabase,
@@ -184,8 +351,11 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     session,
     profile,
     loading,
+    lastError,
+    consecutiveTimeouts,
     signOut,
     refreshProfile,
+    clearError,
   };
 
   return (
@@ -205,3 +375,6 @@ export function useSupabase() {
 
 // Export the supabase client for direct use
 export { supabase };
+
+// Re-export retry utilities for convenience
+export { withTimeout, withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from '@/utils/retry';

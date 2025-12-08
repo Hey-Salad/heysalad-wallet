@@ -1,4 +1,6 @@
 // app/onboarding-profile.tsx
+// Simplified onboarding - just collect username and proceed to wallet setup
+// Profile data is stored in heysalad-oauth (user.email, user.id)
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,18 +15,33 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSupabase } from '@/providers/SupabaseProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCloudflareAuth } from '@/providers/CloudflareAuthProvider';
 import Colors from '@/constants/colors';
+
+const PROFILE_KEY = 'heysalad_profile';
+
+interface LocalProfile {
+  username: string;
+  userId: string;
+  email?: string;
+  createdAt: string;
+}
 
 export default function OnboardingProfile() {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
-  const { supabase, user, refreshProfile } = useSupabase();
+  const { user, loading: authLoading } = useCloudflareAuth();
   const router = useRouter();
 
-  // Check if user already has a profile (like heysalad-cash does)
+  // Check if user already has a local profile
   useEffect(() => {
+    if (authLoading) {
+      console.log('[OnboardingProfile] Auth still loading, waiting...');
+      return;
+    }
+
     const checkProfile = async () => {
       if (!user) {
         console.log('[OnboardingProfile] No user, redirecting to sign-in');
@@ -32,43 +49,30 @@ export default function OnboardingProfile() {
         return;
       }
 
-      console.log('[OnboardingProfile] Checking for existing profile...');
+      console.log('[OnboardingProfile] User found:', user.id);
 
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Profile check timeout')), 5000);
-      });
-
-      const queryPromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-
-      if (error && error.code !== 'PGRST116') {
-        // Log errors that aren't "no rows" errors
-        console.error('[OnboardingProfile] Error checking profile:', error);
+      try {
+        const profileJson = await AsyncStorage.getItem(PROFILE_KEY);
+        if (profileJson) {
+          const profile: LocalProfile = JSON.parse(profileJson);
+          // Check if profile belongs to current user
+          if (profile.userId === user.id) {
+            console.log('[OnboardingProfile] Profile exists, redirecting to wallet setup');
+            router.replace('/wallet-disclaimer');
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('[OnboardingProfile] Error checking profile:', e);
       }
 
-      if (profile) {
-        console.log('[OnboardingProfile] Profile exists, redirecting to main app');
-        router.replace('/(tabs)/(wallet)' as any);
-        return;
-      }
-
-      // No profile found - that's expected for new users
-      console.log('[OnboardingProfile] No profile found, showing onboarding form');
+      // No profile found - show form
+      console.log('[OnboardingProfile] No profile found, showing form');
       setCheckingProfile(false);
     };
 
-    checkProfile().catch((err) => {
-      console.error('[OnboardingProfile] Exception in checkProfile:', err);
-      // Show form even on error so user isn't stuck
-      setCheckingProfile(false);
-    });
-  }, [user, supabase, router]);
+    checkProfile();
+  }, [user, authLoading, router]);
 
   const handleCreateProfile = async () => {
     if (!username.trim()) {
@@ -78,65 +82,30 @@ export default function OnboardingProfile() {
 
     if (!user) {
       Alert.alert('Error', 'No user found. Please sign in again.');
+      router.replace('/sign-in');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('[OnboardingProfile] Creating profile for user:', user.id);
+      console.log('[OnboardingProfile] Creating local profile for user:', user.id);
 
-      // Check if username is already taken
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', username.trim())
-        .single();
-
-      if (existingUser) {
-        Alert.alert('Error', 'Username is already taken. Please choose another one.');
-        setLoading(false);
-        return;
-      }
-
-      // Prepare profile data - only include fields that have values
-      const profileData: any = {
-        auth_user_id: user.id,
+      const profile: LocalProfile = {
         username: username.trim(),
+        userId: user.id,
+        email: user.email,
+        createdAt: new Date().toISOString(),
       };
 
-      // Add email if it exists (for email auth)
-      if (user.email) {
-        profileData.email = user.email;
-      }
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      console.log('[OnboardingProfile] Profile saved locally');
 
-      // Add phone if it exists (for phone auth)
-      // Note: Only add this if your profiles table has a phone column
-      if (user.phone) {
-        profileData.phone = user.phone;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .insert(profileData);
-
-      if (error) {
-        console.error('[OnboardingProfile] Error creating profile:', error);
-        Alert.alert('Error', error.message || 'Failed to create profile');
-        setLoading(false);
-        return;
-      }
-
-      console.log('[OnboardingProfile] Profile created successfully');
-
-      // Refresh the profile in the context
-      await refreshProfile();
-
-      // Navigate to main app
-      router.replace('/(tabs)/(wallet)' as any);
+      // Navigate to wallet disclaimer
+      router.replace('/wallet-disclaimer');
 
     } catch (error) {
       console.error('[OnboardingProfile] Exception:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Error', 'Failed to create profile. Please try again.');
       setLoading(false);
     }
   };
@@ -166,6 +135,10 @@ export default function OnboardingProfile() {
         />
         <Text style={styles.title}>Create your profile</Text>
         <Text style={styles.subtitle}>Choose a username to get started</Text>
+
+        {user?.email && (
+          <Text style={styles.emailText}>Signed in as {user.email}</Text>
+        )}
 
         <TextInput
           style={styles.input}
@@ -214,6 +187,12 @@ const styles = StyleSheet.create({
     color: Colors.brand.inkMuted,
     textAlign: 'center',
   },
+  emailText: {
+    fontSize: 14,
+    color: Colors.brand.inkMuted,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
@@ -224,7 +203,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: Colors.brand.inkMuted,
-    marginBottom: 32,
+    marginBottom: 16,
     textAlign: 'center',
   },
   input: {

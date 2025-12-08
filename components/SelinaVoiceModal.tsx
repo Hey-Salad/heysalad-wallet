@@ -27,13 +27,22 @@ import {
 let Tts: any = null;
 try {
   Tts = require('react-native-tts').default;
-  // Initialize TTS if available
+  // Initialize TTS if available - wrap each call separately for defensive error handling
   if (Tts) {
-    Tts.setDefaultLanguage('en-US');
-    Tts.setDefaultRate(0.5);
+    try {
+      Tts.setDefaultLanguage('en-US');
+    } catch (langError) {
+      console.log('[Selina] TTS language setting failed, using default');
+    }
+    try {
+      Tts.setDefaultRate(0.5);
+    } catch (rateError) {
+      console.log('[Selina] TTS rate setting failed, using default');
+    }
   }
 } catch (error) {
   console.log('[Selina] TTS not available:', error);
+  Tts = null;
 }
 
 const { width, height } = Dimensions.get('window');
