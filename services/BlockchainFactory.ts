@@ -5,6 +5,7 @@
 import { BlockchainService } from '@/types/blockchain';
 import { getNetwork } from '@/config/networks';
 import TronServiceAdapter from './adapters/TronServiceAdapter';
+import MidnightServiceAdapter from './adapters/MidnightServiceAdapter';
 // Future imports:
 // import SolanaServiceAdapter from './adapters/SolanaServiceAdapter';
 // import PolkadotServiceAdapter from './adapters/PolkadotServiceAdapter';
@@ -20,6 +21,9 @@ export function getBlockchainService(networkId: string): BlockchainService {
   switch (network.blockchain) {
     case 'tron':
       return new TronServiceAdapter(networkId);
+
+    case 'midnight':
+      return new MidnightServiceAdapter(networkId);
 
     // Future blockchain support:
     // case 'solana':
@@ -44,7 +48,7 @@ export function getBlockchainService(networkId: string): BlockchainService {
  * Check if a blockchain is supported
  */
 export function isBlockchainSupported(blockchain: string): boolean {
-  const supportedChains = ['tron']; // Add more as implemented
+  const supportedChains = ['tron', 'midnight'];
   return supportedChains.includes(blockchain);
 }
 
@@ -52,5 +56,13 @@ export function isBlockchainSupported(blockchain: string): boolean {
  * Get list of all supported blockchains
  */
 export function getSupportedBlockchains(): string[] {
-  return ['tron']; // Will expand: ['tron', 'solana', 'polkadot', 'avalanche']
+  return ['tron', 'midnight']; // Will expand: ['tron', 'midnight', 'solana', 'polkadot', 'avalanche']
+}
+
+/**
+ * Check if a network supports private transactions
+ */
+export function supportsPrivateTransactions(networkId: string): boolean {
+  const network = getNetwork(networkId);
+  return network.features.hasPrivateTransactions === true;
 }

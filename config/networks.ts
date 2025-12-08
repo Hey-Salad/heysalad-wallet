@@ -195,6 +195,48 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     },
   },
 
+  // Midnight Networks (Privacy-preserving ZK blockchain)
+  'midnight-testnet': {
+    id: 'midnight-testnet',
+    name: 'Midnight Testnet',
+    blockchain: 'midnight',
+    environment: 'testnet',
+    rpcUrl: 'https://rpc.testnet.midnight.network',
+    explorerUrl: 'https://explorer.testnet.midnight.network',
+    nativeToken: {
+      symbol: 'tDUST',
+      name: 'Test DUST',
+      decimals: 8,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: false,
+      hasStaking: false,
+      hasPrivateTransactions: true,
+      hasZkProofs: true,
+    },
+  },
+  'midnight-mainnet': {
+    id: 'midnight-mainnet',
+    name: 'Midnight',
+    blockchain: 'midnight',
+    environment: 'mainnet',
+    rpcUrl: 'https://rpc.midnight.network',
+    explorerUrl: 'https://explorer.midnight.network',
+    nativeToken: {
+      symbol: 'DUST',
+      name: 'DUST',
+      decimals: 8,
+    },
+    features: {
+      hasTokens: true,
+      hasNFTs: false,
+      hasStaking: true,
+      hasPrivateTransactions: true,
+      hasZkProofs: true,
+    },
+  },
+
   // Polygon Networks
   'polygon-mainnet': {
     id: 'polygon-mainnet',

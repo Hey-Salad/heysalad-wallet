@@ -13,8 +13,16 @@ This document provides AI agents (like Claude, Codex, etc.) with comprehensive c
 - **Contact**: peter@heysalad.io
 - **Platform**: iOS (primary), Android (future)
 - **Framework**: Expo 54.0.13, React Native 0.81.4, React 19.1.0
-- **Primary Blockchain**: TRON (testnet & mainnet)
+- **Primary Blockchain**: TRON (testnet & mainnet), Midnight Network (privacy)
 - **Package Manager**: Bun
+
+### Privacy Features (Midnight Network)
+HeySalad Wallet supports **private transactions** using Midnight Network's zero-knowledge proofs:
+- **Hidden Amounts**: Transaction amounts are hidden from public blockchain view
+- **ZK Proofs**: Cryptographic proofs verify validity without revealing data
+- **Voice Commands**: "Send 10 DUST privately to [address]"
+- **Networks**: midnight-testnet, midnight-mainnet
+- **Documentation**: See [MIDNIGHT_PRIVACY_GUIDE.md](MIDNIGHT_PRIVACY_GUIDE.md)
 
 ## Tech Stack
 

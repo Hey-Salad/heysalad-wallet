@@ -1,14 +1,28 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform, TextInput, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView, Image, Linking, Platform, TextInput, Dimensions, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as SecureStore from 'expo-secure-store';
 import Colors from "@/constants/colors";
 import AudioPay from "@/components/AudioPay";
 import HSButton from "@/components/HSButton";
 import { useWallet } from "@/providers/WalletProvider";
+import { useNetwork } from "@/providers/NetworkProvider";
 import { parseVoiceToIntent } from "@/features/voice/intent";
 import { Stack, router } from "expo-router";
-import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones, Nfc, MonitorSmartphone } from "lucide-react-native";
+import { Check, ExternalLink, QrCode, Keyboard, ArrowLeft, X, Headphones, Nfc, MonitorSmartphone, Lock, Shield } from "lucide-react-native";
+import { getBlockchainService, supportsPrivateTransactions } from "@/services/BlockchainFactory";
+import MidnightServiceAdapter from "@/services/adapters/MidnightServiceAdapter";
+
+// Helper to get private key from secure storage
+const getPrivateKey = async (): Promise<string | null> => {
+  try {
+    return await SecureStore.getItemAsync('wallet_private_key');
+  } catch (error) {
+    console.error('[Pay] Failed to get private key:', error);
+    return null;
+  }
+};
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +50,7 @@ type PendingIntent = {
   note?: string;
   category: "groceries" | "restaurants" | "farmers_market" | "delivery" | "other" | "sustainable";
   sustainable: boolean;
+  isPrivate?: boolean; // For Midnight Network private transactions
 };
 
 type PayMethod = "audio" | "text" | "qr";
@@ -44,6 +59,7 @@ type PayStep = "method" | "input" | "review" | "success";
 export default function PayScreen() {
   const insets = useSafeAreaInsets();
   const { send, wallet, refreshBalance } = useWallet();
+  const { network, networkId } = useNetwork();
   const [step, setStep] = useState<PayStep>("method");
   const [method, setMethod] = useState<PayMethod>("audio");
   const [intent, setIntent] = useState<PendingIntent | null>(null);
@@ -52,8 +68,15 @@ export default function PayScreen() {
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTxId, setLastTxId] = useState<string | null>(null);
+  const [lastProofHash, setLastProofHash] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [privacyMode, setPrivacyMode] = useState<boolean>(false);
+
+  // Check if current network supports private transactions
+  const hasPrivacySupport = useMemo(() => {
+    return supportsPrivateTransactions(networkId);
+  }, [networkId]);
 
   // Get wallet balance safely
   const walletBalance = getWalletBalance(wallet);
@@ -90,32 +113,42 @@ export default function PayScreen() {
   const confirmFromText = useCallback(() => {
     const amt = parseFloat(amountStr);
     if (!toAddr || !isFinite(amt) || amt <= 0) {
-      setError("Enter a valid TRON address and amount");
+      setError(`Enter a valid ${network.blockchain === 'midnight' ? 'Midnight' : 'TRON'} address and amount`);
       return;
     }
 
-    // Validate TRON address format
-    if (!toAddr.startsWith('T') || toAddr.length < 30) {
-      setError("Invalid TRON address format");
-      return;
+    // Validate address format based on network
+    if (network.blockchain === 'tron') {
+      if (!toAddr.startsWith('T') || toAddr.length < 30) {
+        setError("Invalid TRON address format");
+        return;
+      }
+    } else if (network.blockchain === 'midnight') {
+      if (!toAddr.startsWith('midnight1') && !toAddr.startsWith('test1')) {
+        setError("Invalid Midnight address format");
+        return;
+      }
     }
 
     // Check if user has enough balance
     if (amt > balance.trx) {
-      setError(`Insufficient balance. You have ${balance.trx.toFixed(2)} TRX`);
+      setError(`Insufficient balance. You have ${balance.trx.toFixed(2)} ${network.nativeToken.symbol}`);
       return;
     }
 
     const p: PendingIntent = { 
-      rawText: `Send ${amt} TRX to ${toAddr}`, 
+      rawText: privacyMode 
+        ? `Send ${amt} ${network.nativeToken.symbol} privately to ${toAddr}` 
+        : `Send ${amt} ${network.nativeToken.symbol} to ${toAddr}`, 
       amountTrx: amt, 
       address: toAddr, 
       category: "other", 
-      sustainable: false 
+      sustainable: false,
+      isPrivate: privacyMode && hasPrivacySupport,
     };
     setIntent(p);
     setStep("review");
-  }, [toAddr, amountStr, balance.trx]);
+  }, [toAddr, amountStr, balance.trx, privacyMode, hasPrivacySupport, network]);
 
   // Handle QR Code scanning
   const handleBarCodeScanned = ({ data }: { data: string }) => {
@@ -227,10 +260,20 @@ export default function PayScreen() {
     if (!intent) return;
     setProcessing(true);
     setError(null);
+    setLastProofHash(null);
     
     try {
       const to = intent.address?.trim();
-      if (!to || !to.startsWith("T")) {
+      
+      // Validate address based on network
+      if (!to) {
+        setError("A valid recipient address is required");
+        setProcessing(false);
+        return;
+      }
+
+      // For TRON, check T prefix; for Midnight, different validation
+      if (network.blockchain === 'tron' && !to.startsWith("T")) {
         setError("A valid recipient TRON address is required");
         setProcessing(false);
         return;
@@ -238,39 +281,77 @@ export default function PayScreen() {
 
       // Final balance check
       if (intent.amountTrx > balance.trx) {
-        setError(`Insufficient balance. You have ${balance.trx.toFixed(2)} TRX`);
+        setError(`Insufficient balance. You have ${balance.trx.toFixed(2)} ${network.nativeToken.symbol}`);
         setProcessing(false);
         return;
       }
 
+      // Check if this is a private transaction on Midnight Network
+      const isPrivateTransaction = intent.isPrivate && hasPrivacySupport;
+
       console.log('[Pay] Sending transaction:', {
         to,
-        amount: intent.amountTrx,
-        from: wallet.address
+        amount: isPrivateTransaction ? 'PRIVATE' : intent.amountTrx,
+        from: wallet.address,
+        isPrivate: isPrivateTransaction,
+        network: networkId,
       });
 
-      // Send using wallet provider function - expect your backend response format
-      const result = await send(to, intent.amountTrx) as SendTrxResponse;
-      
-      console.log('[Pay] Transaction result:', result);
-      
-      // Handle your backend response format
-      if (result.result === true || result.txid) {
-        // Extract transaction ID from your backend response
-        const txid = result.txid;
-        if (txid) {
-          setLastTxId(txid);
-          console.log('[Pay] Transaction ID:', txid);
+      if (isPrivateTransaction) {
+        // Use Midnight's private transaction
+        const service = getBlockchainService(networkId) as MidnightServiceAdapter;
+        
+        if (!service.supportsPrivateTransactions || !service.sendPrivateTransaction) {
+          throw new Error('Private transactions not supported on this network');
         }
-        
-        // Refresh balance
-        await refreshBalance();
-        
-        setStep("success");
+
+        // Get private key from secure storage
+        const privateKey = await getPrivateKey();
+        if (!privateKey) {
+          throw new Error('Unable to access wallet credentials. Please try again.');
+        }
+
+        const result = await service.sendPrivateTransaction({
+          from: wallet.address,
+          to,
+          amount: intent.amountTrx,
+          privateKey,
+          memo: intent.note,
+        });
+
+        console.log('[Pay] Private transaction result:', {
+          success: result.success,
+          txHash: result.txHash?.slice(0, 16) + '...',
+          proofHash: result.proofHash?.slice(0, 16) + '...',
+        });
+
+        if (result.success) {
+          setLastTxId(result.txHash);
+          setLastProofHash(result.proofHash);
+          await refreshBalance();
+          setStep("success");
+        } else {
+          throw new Error(result.error || 'Private transaction failed');
+        }
       } else {
-        // Handle error from your backend
-        const errorMsg = result.Error || "Transaction failed";
-        throw new Error(errorMsg);
+        // Standard transaction
+        const result = await send(to, intent.amountTrx) as SendTrxResponse;
+        
+        console.log('[Pay] Transaction result:', result);
+        
+        if (result.result === true || result.txid) {
+          const txid = result.txid;
+          if (txid) {
+            setLastTxId(txid);
+            console.log('[Pay] Transaction ID:', txid);
+          }
+          
+          await refreshBalance();
+          setStep("success");
+        } else {
+          const errorMsg = result.Error || "Transaction failed";
+          throw new Error(errorMsg);
+        }
       }
     } catch (e: any) {
       console.error('[Pay] Transaction failed:', e);
@@ -279,16 +360,18 @@ export default function PayScreen() {
     } finally {
       setProcessing(false);
     }
-  }, [intent, send, wallet.address, balance.trx, refreshBalance]);
+  }, [intent, send, wallet.address, balance.trx, refreshBalance, hasPrivacySupport, networkId, network]);
 
   const reset = () => {
     setStep("method");
     setIntent(null);
     setError(null);
     setLastTxId(null);
+    setLastProofHash(null);
     setToAddr("");
     setAmountStr("");
     setScanned(false);
+    setPrivacyMode(false);
   };
 
   const explorerBase = useMemo(() => {
@@ -304,7 +387,8 @@ export default function PayScreen() {
     
     try {
       if (Platform.OS === "web") {
-        window.open(url, "_blank");
+        // @ts-ignore - window exists on web platform
+        if (typeof window !== 'undefined') window.open(url, "_blank");
         return;
       }
       const can = await Linking.canOpenURL(url);
@@ -464,25 +548,57 @@ export default function PayScreen() {
         <View style={styles.textInputContainer}>
           {/* Balance Info */}
           <View style={styles.balanceInfo}>
-            <Text style={styles.balanceText}>Available: {balance.trx.toFixed(2)} TRX</Text>
+            <Text style={styles.balanceText}>Available: {balance.trx.toFixed(2)} {network.nativeToken.symbol}</Text>
             <Text style={styles.balanceGBP}>≈ £{balance.usd.toFixed(2)}</Text>
           </View>
+
+          {/* Privacy Mode Toggle - Only show for Midnight Network */}
+          {hasPrivacySupport && (
+            <View style={styles.privacyToggleContainer}>
+              <View style={styles.privacyToggleLeft}>
+                <Shield size={20} color={privacyMode ? Colors.brand.cherryRed : Colors.brand.inkMuted} />
+                <View style={styles.privacyToggleText}>
+                  <Text style={styles.privacyToggleLabel}>Private Transaction</Text>
+                  <Text style={styles.privacyToggleHint}>Hide amount using ZK proofs</Text>
+                </View>
+              </View>
+              <Switch
+                value={privacyMode}
+                onValueChange={setPrivacyMode}
+                trackColor={{ false: '#E5E7EB', true: Colors.brand.cherryRed + '40' }}
+                thumbColor={privacyMode ? Colors.brand.cherryRed : '#f4f3f4'}
+              />
+            </View>
+          )}
+
+          {privacyMode && (
+            <View style={styles.privacyNotice}>
+              <Lock size={16} color={Colors.brand.cherryRed} />
+              <Text style={styles.privacyNoticeText}>
+                Your transaction amount will be hidden from public view using Midnight Network's zero-knowledge proofs.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Recipient Address</Text>
             <TextInput
               value={toAddr}
               onChangeText={setToAddr}
-              placeholder="T... (TRON address)"
+              placeholder={network.blockchain === 'midnight' ? "midnight1..." : "T... (TRON address)"}
               autoCapitalize="none"
               style={styles.textInput}
               testID="to-address"
             />
-            <Text style={styles.inputHelp}>Test address: TLyqzVGLV1srkB7dToTAEqgDSfPtXRJZYH</Text>
+            <Text style={styles.inputHelp}>
+              {network.blockchain === 'midnight' 
+                ? "Enter a Midnight Network address" 
+                : "Test address: TLyqzVGLV1srkB7dToTAEqgDSfPtXRJZYH"}
+            </Text>
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Amount (TRX)</Text>
+            <Text style={styles.inputLabel}>Amount ({network.nativeToken.symbol})</Text>
             <TextInput
               value={amountStr}
               onChangeText={setAmountStr}
@@ -500,10 +616,11 @@ export default function PayScreen() {
           </View>
           
           <HSButton 
-            title="Review Payment" 
+            title={privacyMode ? "Review Private Payment" : "Review Payment"}
             onPress={confirmFromText} 
             variant="primary"
             style={styles.reviewButton}
+            leftIcon={privacyMode ? <Lock size={16} color={Colors.brand.white} /> : undefined}
           />
         </View>
       )}
@@ -526,21 +643,38 @@ export default function PayScreen() {
           variant="ghost"
           style={styles.backButton}
         />
-        <Text style={styles.stepTitle}>Review Payment</Text>
+        <Text style={styles.stepTitle}>
+          {intent?.isPrivate ? "Review Private Payment" : "Review Payment"}
+        </Text>
       </View>
+
+      {/* Privacy Badge */}
+      {intent?.isPrivate && (
+        <View style={styles.privacyBadge}>
+          <Lock size={16} color={Colors.brand.white} />
+          <Text style={styles.privacyBadgeText}>Private Transaction</Text>
+        </View>
+      )}
 
       <View style={styles.reviewCard}>
         <Text style={styles.reviewTitle}>Payment Details</Text>
         
         <View style={styles.reviewRow}>
           <Text style={styles.reviewLabel}>Amount</Text>
-          <Text style={styles.reviewValue}>{intent?.amountTrx} TRX</Text>
+          <View style={styles.reviewValueRow}>
+            {intent?.isPrivate && <Lock size={14} color={Colors.brand.cherryRed} style={{ marginRight: 4 }} />}
+            <Text style={styles.reviewValue}>
+              {intent?.isPrivate ? "🔒 HIDDEN" : `${intent?.amountTrx} ${network.nativeToken.symbol}`}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.reviewRow}>
-          <Text style={styles.reviewLabel}>Amount (GBP)</Text>
-          <Text style={styles.reviewValue}>£{((intent?.amountTrx || 0) * 0.12).toFixed(2)}</Text>
-        </View>
+        {!intent?.isPrivate && (
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Amount (GBP)</Text>
+            <Text style={styles.reviewValue}>£{((intent?.amountTrx || 0) * 0.12).toFixed(2)}</Text>
+          </View>
+        )}
         
         <View style={styles.reviewRow}>
           <Text style={styles.reviewLabel}>To</Text>
@@ -557,9 +691,14 @@ export default function PayScreen() {
         </View>
 
         <View style={styles.reviewRow}>
+          <Text style={styles.reviewLabel}>Network</Text>
+          <Text style={styles.reviewValue}>{network.name}</Text>
+        </View>
+
+        <View style={styles.reviewRow}>
           <Text style={styles.reviewLabel}>New Balance</Text>
           <Text style={styles.reviewValue}>
-            {(balance.trx - (intent?.amountTrx ?? 0)).toFixed(2)} TRX
+            {(balance.trx - (intent?.amountTrx ?? 0)).toFixed(2)} {network.nativeToken.symbol}
           </Text>
         </View>
         
@@ -571,6 +710,20 @@ export default function PayScreen() {
         )}
       </View>
 
+      {/* Privacy Info */}
+      {intent?.isPrivate && (
+        <View style={styles.privacyInfoCard}>
+          <Shield size={20} color={Colors.brand.cherryRed} />
+          <View style={styles.privacyInfoText}>
+            <Text style={styles.privacyInfoTitle}>Zero-Knowledge Privacy</Text>
+            <Text style={styles.privacyInfoDesc}>
+              The transaction amount will be hidden on the blockchain using Midnight Network's ZK proofs. 
+              Only you and the recipient will know the actual amount.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Security Warning */}
       <View style={styles.warningCard}>
         <Text style={styles.warningTitle}>⚠️ Important</Text>
@@ -581,10 +734,10 @@ export default function PayScreen() {
 
       <View style={styles.confirmContainer}>
         <HSButton
-          title={processing ? "Sending..." : "Confirm with Biometric"}
+          title={processing ? "Sending..." : intent?.isPrivate ? "Confirm Private Payment" : "Confirm with Biometric"}
           onPress={onConfirm}
           loading={processing}
-          leftIcon={processing ? undefined : <Check color={Colors.brand.white} size={16} />}
+          leftIcon={processing ? undefined : intent?.isPrivate ? <Lock color={Colors.brand.white} size={16} /> : <Check color={Colors.brand.white} size={16} />}
           variant="primary"
           style={styles.confirmButton}
         />
@@ -595,13 +748,22 @@ export default function PayScreen() {
   const renderSuccess = () => (
     <View style={styles.stepContainer}>
       <View style={styles.successContainer}>
-        <View style={styles.successIcon}>
-          <Check color={Colors.brand.cherryRed} size={48} />
+        <View style={[styles.successIcon, intent?.isPrivate && styles.successIconPrivate]}>
+          {intent?.isPrivate ? (
+            <Lock color={Colors.brand.cherryRed} size={48} />
+          ) : (
+            <Check color={Colors.brand.cherryRed} size={48} />
+          )}
         </View>
         
-        <Text style={styles.successTitle}>Payment Sent! 🎉</Text>
+        <Text style={styles.successTitle}>
+          {intent?.isPrivate ? "Private Payment Sent! 🔒" : "Payment Sent! 🎉"}
+        </Text>
         <Text style={styles.successSubtitle}>
-          Your payment of {intent?.amountTrx} TRX has been sent successfully
+          {intent?.isPrivate 
+            ? `Your private payment has been sent successfully. The amount is hidden from public view.`
+            : `Your payment of ${intent?.amountTrx} ${network.nativeToken.symbol} has been sent successfully`
+          }
         </Text>
         
         {lastTxId && (
@@ -610,6 +772,20 @@ export default function PayScreen() {
             <Text style={styles.txValue} numberOfLines={1} ellipsizeMode="middle">
               {lastTxId}
             </Text>
+            
+            {/* Show proof hash for private transactions */}
+            {lastProofHash && intent?.isPrivate && (
+              <>
+                <Text style={[styles.txLabel, { marginTop: 12 }]}>ZK Proof Hash</Text>
+                <Text style={styles.txValue} numberOfLines={1} ellipsizeMode="middle">
+                  {lastProofHash}
+                </Text>
+                <Text style={styles.proofHint}>
+                  This proof verifies your transaction without revealing the amount
+                </Text>
+              </>
+            )}
+            
             <HSButton
               title="View on Explorer"
               onPress={openInExplorer}
@@ -989,5 +1165,108 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     textAlign: "center",
     fontSize: 14,
+  },
+  // Privacy Mode Styles
+  privacyToggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.brand.lightPeach,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  privacyToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  privacyToggleText: {
+    flex: 1,
+  },
+  privacyToggleLabel: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.brand.ink,
+  },
+  privacyToggleHint: {
+    fontSize: 12,
+    color: Colors.brand.inkMuted,
+    marginTop: 2,
+  },
+  privacyNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: '#FEF3F2',
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.brand.cherryRed,
+  },
+  privacyNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.brand.ink,
+    lineHeight: 18,
+  },
+  privacyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.brand.cherryRed,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: "center",
+    marginBottom: 16,
+    gap: 8,
+  },
+  privacyBadgeText: {
+    color: Colors.brand.white,
+    fontSize: 14,
+    fontWeight: "700" as const,
+  },
+  privacyInfoCard: {
+    flexDirection: "row",
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#10B981',
+  },
+  privacyInfoText: {
+    flex: 1,
+  },
+  privacyInfoTitle: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: '#065F46',
+    marginBottom: 4,
+  },
+  privacyInfoDesc: {
+    fontSize: 13,
+    color: '#047857',
+    lineHeight: 18,
+  },
+  reviewValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flex: 1,
+  },
+  successIconPrivate: {
+    borderColor: Colors.brand.cherryRed,
+    backgroundColor: '#FEF3F2',
+  },
+  proofHint: {
+    fontSize: 11,
+    color: Colors.brand.inkMuted,
+    fontStyle: "italic",
+    marginTop: 4,
   },
 });

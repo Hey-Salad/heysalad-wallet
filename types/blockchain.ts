@@ -9,7 +9,8 @@ export type BlockchainNetwork =
   | 'avalanche'
   | 'ethereum'
   | 'polygon'
-  | 'base';
+  | 'base'
+  | 'midnight';
 
 export type NetworkEnvironment = 'mainnet' | 'testnet' | 'devnet';
 
@@ -29,6 +30,8 @@ export interface NetworkConfig {
     hasTokens: boolean;
     hasNFTs: boolean;
     hasStaking: boolean;
+    hasPrivateTransactions?: boolean;
+    hasZkProofs?: boolean;
   };
 }
 
@@ -77,4 +80,45 @@ export interface BlockchainService {
   // Utility
   getExplorerUrl(txid: string): string;
   estimateFee(params: TransactionParams): Promise<number>;
+
+  // Privacy features (optional - for Midnight Network)
+  supportsPrivateTransactions?(): boolean;
+  sendPrivateTransaction?(params: PrivateTransactionParams): Promise<PrivateTransactionResult>;
+  verifyTransactionProof?(proofHash: string): Promise<ProofVerificationResult>;
+}
+
+// Privacy transaction types for Midnight Network
+export interface PrivateTransactionParams {
+  from: string;
+  to: string;
+  amount: number;
+  privateKey: string;
+  memo?: string;
+}
+
+export interface PrivateTransactionResult {
+  success: boolean;
+  txHash: string;
+  proofHash: string;
+  explorerUrl: string;
+  error?: string;
+}
+
+export interface ProofVerificationResult {
+  valid: boolean;
+  from: string;
+  to: string;
+  timestamp: number;
+  error?: string;
+}
+
+export interface PrivateTransaction {
+  txHash: string;
+  proofHash: string;
+  from: string;
+  to: string;
+  amount: 'PRIVATE'; // Amount is hidden
+  timestamp: number;
+  type: 'private_transfer';
+  status: 'confirmed' | 'pending' | 'failed';
 }

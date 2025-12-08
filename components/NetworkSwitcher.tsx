@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
-import { AlertTriangle, Check, ChevronDown, Globe, X } from 'lucide-react-native';
+import { AlertTriangle, Check, ChevronDown, Globe, X, Shield } from 'lucide-react-native';
 import { getNetworksByBlockchain, isTestnet } from '@/config/networks';
 import { useNetwork } from '@/providers/NetworkProvider';
 
@@ -52,6 +52,7 @@ export default function NetworkSwitcher() {
   const tronNetworks = getNetworksByBlockchain('tron').filter(n => n.environment === 'mainnet');
   const baseNetworks = getNetworksByBlockchain('base').filter(n => n.environment === 'mainnet');
   const polygonNetworks = getNetworksByBlockchain('polygon').filter(n => n.environment === 'mainnet');
+  const midnightNetworks = getNetworksByBlockchain('midnight'); // Include both testnet and mainnet for privacy features
 
   return (
     <>
@@ -189,6 +190,52 @@ export default function NetworkSwitcher() {
                 </TouchableOpacity>
               );
             })}
+
+            {/* Midnight Networks - Privacy-preserving */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>MIDNIGHT</Text>
+              <View style={styles.privacyBadge}>
+                <Shield size={10} color={Colors.brand.white} />
+                <Text style={styles.privacyBadgeText}>Privacy</Text>
+              </View>
+            </View>
+            {midnightNetworks.map((network) => {
+              const isSelected = network.id === currentNetworkId;
+              const isTest = isTestnet(network.id);
+
+              return (
+                <TouchableOpacity
+                  key={network.id}
+                  style={[styles.networkItem, isSelected && styles.networkItemSelected]}
+                  onPress={() => handleNetworkSelect(network.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.networkLeft}>
+                    <View style={[styles.networkDot, isTest && styles.networkDotTestnet, styles.networkDotPrivacy]} />
+                    <View>
+                      <View style={styles.networkNameRow}>
+                        <Text style={styles.networkName}>{network.name}</Text>
+                        <Shield size={12} color={Colors.brand.cherryRed} style={{ marginLeft: 6 }} />
+                      </View>
+                      <Text style={styles.networkMeta}>
+                        {network.nativeToken.symbol} • {isTest ? 'Testnet' : 'Mainnet'} • ZK Privacy
+                      </Text>
+                    </View>
+                  </View>
+                  {isSelected && (
+                    <Check color={Colors.brand.cherryRed} size={20} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Privacy Info */}
+            <View style={styles.privacyInfo}>
+              <Shield size={16} color={Colors.brand.cherryRed} />
+              <Text style={styles.privacyInfoText}>
+                Midnight Network uses zero-knowledge proofs to hide transaction amounts while maintaining blockchain security.
+              </Text>
+            </View>
 
             {/* Coming Soon: Other Blockchains */}
             <Text style={[styles.sectionTitle, styles.sectionTitleDisabled]}>Coming Soon</Text>
@@ -374,5 +421,52 @@ const styles = StyleSheet.create({
     color: Colors.brand.ink,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  // Privacy/Midnight styles
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  privacyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.brand.cherryRed,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
+  },
+  privacyBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: Colors.brand.white,
+  },
+  networkDotPrivacy: {
+    backgroundColor: '#8B5CF6', // Purple for privacy networks
+  },
+  networkNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  privacyInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#8B5CF6',
+  },
+  privacyInfoText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#5B21B6',
+    lineHeight: 16,
   },
 });

@@ -228,6 +228,17 @@ export default function SelinaVoiceModal({
     }, 1500);
   };
 
+  // Parse voice command for privacy keywords
+  const parsePrivacyKeywords = (text: string): boolean => {
+    const privacyKeywords = [
+      'privately', 'private', 'hide amount', 'secret payment', 
+      'hidden', 'confidential', 'anonymous', 'zk', 'zero knowledge',
+      'midnight', 'privacy mode'
+    ];
+    const lowerText = text.toLowerCase();
+    return privacyKeywords.some(keyword => lowerText.includes(keyword));
+  };
+
   // Simulate conversation
   const simulateConversation = () => {
     console.log('[Selina] 🎭 Starting demo conversation...');
@@ -239,24 +250,36 @@ export default function SelinaVoiceModal({
         "How do I send TRX to someone?",
         "Is my wallet secure?",
         "Show me my transaction history",
-        "Help me understand crypto payments"
+        "Help me understand crypto payments",
+        "Send 10 TRX privately to my friend", // Privacy example
+        "Can I hide my transaction amount?", // Privacy example
       ];
       const randomInput = userInputs[Math.floor(Math.random() * userInputs.length)];
       
       addUserMessage(randomInput);
       setConversationState('thinking');
       
+      // Check for privacy keywords
+      const isPrivacyRequest = parsePrivacyKeywords(randomInput);
+      
       setTimeout(() => {
-        const responses = [
-          `Brilliant! Your current balance is ${currentBalance.toFixed(1)} TRX, which is worth approximately £${(currentBalance * 0.12).toFixed(2)}. Looking quite healthy, I must say!`,
-          "Excellent question! To send TRX, simply tap the send button, enter the recipient's address, and I'll guide you through our secure Face ID authentication process. Shall we give it a go?",
-          "Absolutely! Your HeySalad wallet uses banking-grade security with military-level encryption and biometric protection. Your crypto is safer than the Crown Jewels, darling!",
-          `Your TRON address is ${walletAddress.slice(0, 12)}... and you've had quite a bit of activity lately. Would you like me to walk you through your recent transactions?`,
-          "I do say, I'm here to help with all your crypto needs! Whether it's sending payments, checking balances, or understanding blockchain technology, I'm at your service. What would you like to learn about?"
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        let response: string;
         
-        addSelinaMessage(randomResponse);
+        if (isPrivacyRequest) {
+          // Privacy-specific responses
+          response = "I'll send that privately using Midnight Network. Your transaction amount will be hidden from public view using zero-knowledge proofs. Only you and the recipient will know the actual amount. Shall I proceed with the private payment?";
+        } else {
+          const responses = [
+            `Brilliant! Your current balance is ${currentBalance.toFixed(1)} TRX, which is worth approximately £${(currentBalance * 0.12).toFixed(2)}. Looking quite healthy, I must say!`,
+            "Excellent question! To send TRX, simply tap the send button, enter the recipient's address, and I'll guide you through our secure Face ID authentication process. You can also enable Privacy Mode to hide your transaction amount using Midnight Network's ZK proofs!",
+            "Absolutely! Your HeySalad wallet uses banking-grade security with military-level encryption and biometric protection. For extra privacy, you can use Midnight Network to hide transaction amounts. Your crypto is safer than the Crown Jewels, darling!",
+            `Your TRON address is ${walletAddress.slice(0, 12)}... and you've had quite a bit of activity lately. Would you like me to walk you through your recent transactions?`,
+            "I do say, I'm here to help with all your crypto needs! Whether it's sending payments, checking balances, or using privacy features with Midnight Network, I'm at your service. What would you like to learn about?"
+          ];
+          response = responses[Math.floor(Math.random() * responses.length)];
+        }
+        
+        addSelinaMessage(response);
       }, 2000);
     }, 2500);
   };
