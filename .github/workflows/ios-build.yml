@@ -10,6 +10,8 @@ env:
   SECRETS_API: https://apple-pie-sk.heysalad.app
   BUNDLE_ID: app.saladhr.heysalad-wallet
   SCHEME: HeySaladWallet
+  WORKSPACE: ios/HeySaladWallet.xcworkspace
+  TEAM_ID: A24823SWLS
 
 jobs:
   build-simulator:
@@ -37,19 +39,19 @@ jobs:
       - name: Build for simulator
         run: |
           xcodebuild \
-            -workspace ios/HeySaladWallet.xcworkspace \
-            -scheme HeySaladWallet \
+            -workspace $WORKSPACE \
+            -scheme $SCHEME \
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Upload build logs on failure
+      - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: wallet-build-logs
+          name: wallet-simulator-logs
           path: ~/Library/Logs/
           retention-days: 3
 
@@ -58,7 +60,7 @@ jobs:
     runs-on: macos-14
     if: github.ref == 'refs/heads/main'
     needs: build-simulator
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -70,11 +72,11 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Install Fastlane
-        run: brew install fastlane
-
       - name: Expo prebuild
         run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Install CocoaPods
+        run: cd ios && pod install --repo-update
 
       - name: Fetch Apple credentials from apple-pie-sk
         env:
@@ -82,47 +84,51 @@ jobs:
         run: |
           CREDS=$(curl -sf $SECRETS_API/secrets/apple \
             -H "Authorization: Bearer $APPLE_PIE_SK_KEY")
-          echo "MATCH_PASSWORD=$(echo $CREDS | python3 -c "import sys,json; print(json.load(sys.stdin)['matchPassword'])")" >> $GITHUB_ENV
-          echo "MATCH_GIT_URL=$(echo $CREDS | python3 -c "import sys,json; print(json.load(sys.stdin)['matchGitUrl'])")" >> $GITHUB_ENV
           echo "APP_STORE_KEY_ID=$(echo $CREDS | python3 -c "import sys,json; print(json.load(sys.stdin)['keyId'])")" >> $GITHUB_ENV
           echo "APP_STORE_ISSUER_ID=$(echo $CREDS | python3 -c "import sys,json; print(json.load(sys.stdin)['issuerId'])")" >> $GITHUB_ENV
           echo $CREDS | python3 -c "import sys,json; print(json.load(sys.stdin)['keyP8'])" > /tmp/AuthKey.p8
+          chmod 600 /tmp/AuthKey.p8
 
-      - name: Install CocoaPods
-        run: cd ios && pod install
-
-      - name: Run Fastlane Match
+      - name: Archive app
         run: |
-          fastlane match appstore \
-            --git_url "$MATCH_GIT_URL" \
-            --app_identifier "$BUNDLE_ID" \
-            --api_key_path /tmp/api_key.json \
-            --readonly
-        env:
-          MATCH_PASSWORD: ${{ env.MATCH_PASSWORD }}
-
-      - name: Build IPA
-        run: |
-          xcodebuild \
-            -workspace ios/HeySaladWallet.xcworkspace \
-            -scheme HeySaladWallet \
+          xcodebuild archive \
+            -workspace $WORKSPACE \
+            -scheme $SCHEME \
             -configuration Release \
             -archivePath build/HeySaladWallet.xcarchive \
+            -authenticationKeyID "$APP_STORE_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_ISSUER_ID" \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
             -allowProvisioningUpdates \
-            archive
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$TEAM_ID
+
+      - name: Export IPA
+        run: |
           xcodebuild -exportArchive \
             -archivePath build/HeySaladWallet.xcarchive \
             -exportPath build \
-            -exportOptionsPlist ios/exportOptions.plist
+            -exportOptionsPlist ios/exportOptions.plist \
+            -authenticationKeyID "$APP_STORE_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_ISSUER_ID" \
+            -authenticationKeyPath /tmp/AuthKey.p8 \
+            -allowProvisioningUpdates
 
       - name: Upload to TestFlight
         run: |
           xcrun altool --upload-app \
             --type ios \
-            --file build/HeySaladWallet.ipa \
+            --file "$(find build -name '*.ipa' | head -1)" \
             --apiKey "$APP_STORE_KEY_ID" \
             --apiIssuer "$APP_STORE_ISSUER_ID" \
             --apiKey-path /tmp/AuthKey.p8
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HeySaladWallet-ipa
+          path: build/*.ipa
+          retention-days: 7
 
       - name: Cleanup
         if: always()
