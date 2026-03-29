@@ -76,7 +76,6 @@
     "https-browserify": "^1.0.0",
     "js-sha3": "^0.9.3",
     "lucide-react-native": "^0.400.0",
-    "nativewind": "^4.1.23",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",
@@ -108,7 +107,8 @@
     "viem": "^2.40.3",
     "vm-browserify": "^1.1.2",
     "zod": "^4.0.17",
-    "zustand": "^5.0.2"
+    "zustand": "^5.0.2",
+    "@rork-ai/toolkit-sdk": "latest"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
