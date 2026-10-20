@@ -71,8 +71,9 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
    */
   const clearAuth = useCallback(async () => {
     try {
-      await heysaladToken.clear();
+      // Non-secret state first, so a token-store failure cannot leave the profile behind.
       await AsyncStorage.removeItem(USER_KEY);
+      await heysaladToken.clear();
     } catch (e) {
       console.error('[CloudflareAuth] Error clearing auth:', e);
     }
@@ -171,7 +172,8 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
    * Handle deep link callback with JWT token
    */
   const handleDeepLink = useCallback(async (url: string) => {
-    console.log('[CloudflareAuth] Deep link received:', url);
+    // Never log the URL: it carries the magic-link token.
+    console.log('[CloudflareAuth] Deep link received');
 
     // heysalad-oauth returns token as query param: heysalad://auth/callback?token=xxx
     const urlObj = new URL(url);

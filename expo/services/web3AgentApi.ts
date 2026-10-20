@@ -243,8 +243,8 @@ async function setAuthToken(token: string): Promise<void> {
 
 async function clearAuthToken(): Promise<void> {
   try {
-    await web3AgentToken.clear();
     await AsyncStorage.removeItem(WALLET_ADDRESS_KEY);
+    await web3AgentToken.clear();
   } catch (error) {
     logger.error('[Web3AgentApi] Error clearing auth token:', error);
   }
