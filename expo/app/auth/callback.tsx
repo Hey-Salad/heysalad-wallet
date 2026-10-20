@@ -29,7 +29,7 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('[AuthCallback] Processing magic link callback');
-        console.log('[AuthCallback] Params:', params);
+        // Never log params: the magic-link token arrives in them.
 
         // Check if token is in URL params (heysalad-oauth returns ?token=xxx)
         const tokenFromParams = params.token as string | undefined;
@@ -54,13 +54,13 @@ export default function AuthCallback() {
 
         // Try to get URL from Linking (fallback)
         let url = await Linking.getInitialURL();
-        console.log('[AuthCallback] Initial URL:', url);
+        console.log('[AuthCallback] Initial URL', url ? 'present' : 'absent');
 
         if (!url) {
           // Wait for URL event
           const urlPromise = new Promise<string | null>((resolve) => {
             const subscription = Linking.addEventListener('url', (event) => {
-              console.log('[AuthCallback] URL event:', event.url);
+              console.log('[AuthCallback] URL event received');
               subscription.remove();
               resolve(event.url);
             });
@@ -73,7 +73,7 @@ export default function AuthCallback() {
         }
 
         if (url) {
-          console.log('[AuthCallback] Processing URL:', url);
+          console.log('[AuthCallback] Processing deep link');
           
           // heysalad-oauth returns token as query param
           const urlObj = new URL(url);

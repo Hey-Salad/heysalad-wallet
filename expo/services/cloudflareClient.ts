@@ -1,7 +1,6 @@
 // services/cloudflareClient.ts
 // API client for HeySalad Cloudflare services integration
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@/utils/logger';
 
 const CLOUDFLARE_BASE_URLS = {
@@ -12,7 +11,7 @@ const CLOUDFLARE_BASE_URLS = {
   walletApi: 'https://heysalad-wallet-api.heysalad-o.workers.dev',
 } as const;
 
-const AUTH_TOKEN_KEY = 'heysalad_jwt_token';
+import { heysaladToken } from '@/lib/authToken';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -51,7 +50,7 @@ interface TransactionNotification {
  */
 async function getAuthToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    return await heysaladToken.read();
   } catch (error) {
     logger.error('[CloudflareClient] Error getting auth token:', error);
     return null;
@@ -63,7 +62,7 @@ async function getAuthToken(): Promise<string | null> {
  */
 export async function setAuthToken(token: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    await heysaladToken.write(token);
   } catch (error) {
     logger.error('[CloudflareClient] Error setting auth token:', error);
   }
@@ -74,7 +73,7 @@ export async function setAuthToken(token: string): Promise<void> {
  */
 export async function clearAuthToken(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await heysaladToken.clear();
   } catch (error) {
     logger.error('[CloudflareClient] Error clearing auth token:', error);
   }
