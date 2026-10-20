@@ -3,9 +3,9 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import { heysaladToken } from '@/lib/authToken';
 
 const OAUTH_BASE_URL = 'https://oauth.heysalad.app';
-const AUTH_TOKEN_KEY = 'heysalad_jwt_token';
 const USER_KEY = 'heysalad_user';
 
 export interface CloudflareUser {
@@ -55,11 +55,11 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
   }, []);
 
   /**
-   * Store auth data in AsyncStorage
+   * Store the token in SecureStore and the (non-secret) user profile in AsyncStorage
    */
   const persistAuth = useCallback(async (authToken: string, authUser: CloudflareUser) => {
     try {
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, authToken);
+      await heysaladToken.write(authToken);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(authUser));
     } catch (e) {
       console.error('[CloudflareAuth] Error persisting auth:', e);
@@ -71,7 +71,8 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
    */
   const clearAuth = useCallback(async () => {
     try {
-      await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_KEY]);
+      await heysaladToken.clear();
+      await AsyncStorage.removeItem(USER_KEY);
     } catch (e) {
       console.error('[CloudflareAuth] Error clearing auth:', e);
     }
@@ -81,7 +82,7 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
    * Validate JWT token with heysalad-oauth
    */
   const validateToken = useCallback(async (): Promise<boolean> => {
-    const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    const storedToken = await heysaladToken.read();
     if (!storedToken) {
       return false;
     }
@@ -222,7 +223,7 @@ export function CloudflareAuthProvider({ children }: { children: React.ReactNode
       
       try {
         // Try to restore session from storage
-        const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        const storedToken = await heysaladToken.read();
         const storedUser = await AsyncStorage.getItem(USER_KEY);
 
         if (storedToken && storedUser) {

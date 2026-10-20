@@ -29,7 +29,7 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('[AuthCallback] Processing magic link callback');
-        console.log('[AuthCallback] Params:', params);
+        // Never log params: the magic-link token arrives in them.
 
         // Check if token is in URL params (heysalad-oauth returns ?token=xxx)
         const tokenFromParams = params.token as string | undefined;

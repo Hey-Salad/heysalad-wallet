@@ -15,7 +15,7 @@ import { logger } from '@/utils/logger';
 // =============================================================================
 
 const BASE_URL = 'https://heysalad-web3-agent.heysalad-o.workers.dev';
-const AUTH_TOKEN_KEY = 'web3_agent_token';
+import { web3AgentToken } from '@/lib/authToken';
 const WALLET_ADDRESS_KEY = 'web3_agent_wallet';
 
 // =============================================================================
@@ -226,7 +226,7 @@ export interface AgentInfo {
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    return await web3AgentToken.read();
   } catch (error) {
     logger.error('[Web3AgentApi] Error getting auth token:', error);
     return null;
@@ -235,7 +235,7 @@ async function getAuthToken(): Promise<string | null> {
 
 async function setAuthToken(token: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    await web3AgentToken.write(token);
   } catch (error) {
     logger.error('[Web3AgentApi] Error setting auth token:', error);
   }
@@ -243,7 +243,7 @@ async function setAuthToken(token: string): Promise<void> {
 
 async function clearAuthToken(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await web3AgentToken.clear();
     await AsyncStorage.removeItem(WALLET_ADDRESS_KEY);
   } catch (error) {
     logger.error('[Web3AgentApi] Error clearing auth token:', error);
